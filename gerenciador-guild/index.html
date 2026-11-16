@@ -185,7 +185,9 @@ h1 {
 table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
 th, td { padding: 0.55rem 0.75rem; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
 tbody tr:last-child td { border-bottom: 0; }
-th:first-child, td:first-child { text-align: left; }
+th:nth-child(2), td:nth-child(2) { text-align: left; }
+th.pos, td.pos { width: 1%; padding-right: 0.25rem; text-align: right; font-family: var(--font-display); font-weight: 700; font-size: var(--fs-lg); color: var(--muted); }
+thead th.pos { font-size: var(--fs-sm); font-weight: 600; }
 thead th { background: var(--surface-2); padding-block: 0.4rem; }
 th button {
   border: 0; background: none; cursor: pointer; padding: 0.15rem 0;
@@ -487,12 +489,18 @@ function sortRows(rows, [col, dir]) {
     return (x < y ? -1 : x > y ? 1 : 0) * dir || b.total - a.total || a.name.localeCompare(b.name);
   });
 }
+// Posição por contribuição (1 = quem mais contribuiu), independente da ordenação escolhida na tabela
+function positions(rows) {
+  const m = new Map();
+  [...rows].sort((a, b) => b.total - a.total || a.name.localeCompare(b.name)).forEach((r, i) => m.set(r.key, i + 1));
+  return m;
+}
 function rankLabel(r) { return (RANKS[r] || [r.replace(/^(a|the) /, '')])[0]; }
 
 /* ---------- Render ---------- */
 function thead(view, cols) {
   const [sc, sd] = ui.sort[view];
-  return '<thead><tr>' + cols.map(([id, label]) =>
+  return '<thead><tr><th scope="col" class="pos" title="Posição por contribuição">#</th>' + cols.map(([id, label]) =>
     `<th scope="col"><button type="button" data-sort="${id}" data-view="${view}"${sc === id ? ` aria-sort="${sd > 0 ? 'ascending' : 'descending'}"` : ''}>${label}</button></th>`).join('') + '</tr></thead>';
 }
 function tile(label, value, sub) { return `<div class="tile"><span class="lbl">${label}</span><span class="num">${value}</span>${sub ? `<span class="sub">${sub}</span>` : ''}</div>`; }
@@ -539,8 +547,10 @@ function renderWeek() {
     tile('Boss da semana', `${boss}<small> / ${rows.length}</small>`, 'participaram');
 
   const dis = ui.canWrite ? '' : ' disabled';
+  const pos = positions(rows);
   $('week-table').innerHTML = thead('semana', [['name', 'Membro'], ['points', 'Pontos'], ['donated', 'Doado'], ['total', 'Contribuição'], ['status', 'Situação'], ['boss', 'Boss']]) +
     '<tbody>' + sortRows(rows, ui.sort.semana).map(r => `<tr data-key="${esc(r.key)}">
+      <td class="pos">${pos.get(r.key)}</td>
       ${who(r)}
       <td><input type="number" min="0" step="1" inputmode="numeric" id="p-${esc(r.key)}" data-f="points" value="${r.points}" aria-label="Pontos de ${esc(r.name)}"${dis}></td>
       <td><input type="number" min="0" step="50" inputmode="numeric" id="c-${esc(r.key)}" data-f="contribution" value="${r.donated}" aria-label="Valor doado por ${esc(r.name)}"${dis}></td>
@@ -559,8 +569,10 @@ function renderAll() {
     tile('Doado', fmt(sum('donated')), 'pago direto para a guild') +
     tile('Membros', fmt(rows.length), `${rows.filter(r => r.active).length} na semana mais recente`) +
     tile('Presenças em boss', fmt(sum('boss')), 'somando todas as semanas');
+  const pos = positions(rows);
   $('all-table').innerHTML = rows.length ? thead('geral', [['name', 'Membro'], ['weeks', 'Semanas'], ['points', 'Pontos'], ['donated', 'Doado'], ['total', 'Contribuição'], ['avg', 'Média / semana'], ['hit', 'Na meta'], ['boss', 'Boss'], ['status', 'Situação']]) +
     '<tbody>' + sortRows(rows, ui.sort.geral).map(r => `<tr>
+      <td class="pos">${pos.get(r.key)}</td>
       ${who(r, r.active ? '' : ' · <span class="gone">fora da última semana</span>')}
       <td>${r.weeks}</td><td>${fmt(r.points)}</td><td>${fmt(r.donated)}</td>
       <td><b>${fmt(r.total)}</b></td>
@@ -677,8 +689,8 @@ function weekExport(id) {
   const end = parseIso(id); end.setUTCDate(end.getUTCDate() + 6);
   return {
     week: { start: id, end: iso(end) }, exportedAt: w.exportedAt || '',
-    members: sortRows(weekRows(id), ['total', -1]).map(r => ({
-      name: r.name, rank: r.rank, level: r.level, points: r.points, donated: r.donated,
+    members: sortRows(weekRows(id), ['total', -1]).map((r, i) => ({
+      position: i + 1, name: r.name, rank: r.rank, level: r.level, points: r.points, donated: r.donated,
       pointsValue: r.points * state.config.pointValue, contribution: r.total, status: r.status, boss: r.boss,
     })),
   };
@@ -688,8 +700,8 @@ function fullExport() {
   return {
     guild, generatedAt: new Date().toISOString(), config: { ...state.config },
     weeks: weekIds().reverse().map(weekExport),
-    totals: sortRows(allRows(), ['total', -1]).map(r => ({
-      name: r.name, rank: r.rank, level: r.level, weeks: r.weeks, points: r.points, donated: r.donated, contribution: r.total,
+    totals: sortRows(allRows(), ['total', -1]).map((r, i) => ({
+      position: i + 1, name: r.name, rank: r.rank, level: r.level, weeks: r.weeks, points: r.points, donated: r.donated, contribution: r.total,
       averagePerWeek: Math.round(r.avg), weeksOnGoal: r.hit, bossCount: r.boss, inLatestWeek: r.active,
     })),
   };
