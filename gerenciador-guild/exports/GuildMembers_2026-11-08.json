@@ -1,0 +1,231 @@
+{
+  "guild": "Cafe Do Psyduck",
+  "exportedAt": "2026-11-08 22:34:18",
+  "members": [
+    {
+      "name": "Kd O Lobinho",
+      "rank": "the Leader",
+      "level": 455,
+      "status": "offline",
+      "lastLogin": "08/11/2026 16:49:18",
+      "points": 40,
+      "contribution": 1800
+    },
+    {
+      "name": "Tec",
+      "rank": "a Vice-Leader",
+      "level": 400,
+      "status": "offline",
+      "lastLogin": "08/11/2026 18:51:24",
+      "points": 12,
+      "contribution": 2700
+    },
+    {
+      "name": "Hey Ammy",
+      "rank": "a Vice-Leader",
+      "level": 443,
+      "status": "offline",
+      "lastLogin": "08/11/2026 18:46:01",
+      "points": 40,
+      "contribution": 3700
+    },
+    {
+      "name": "Hyuzen",
+      "rank": "a Vice-Leader",
+      "level": 445,
+      "status": "offline",
+      "lastLogin": "08/11/2026 16:33:43",
+      "points": 4,
+      "contribution": 2700
+    },
+    {
+      "name": "Zahal",
+      "rank": "a Vice-Leader",
+      "level": 458,
+      "status": "online",
+      "lastLogin": "",
+      "points": 16,
+      "contribution": 1800
+    },
+    {
+      "name": "Rathir",
+      "rank": "a Vice-Leader",
+      "level": 500,
+      "status": "online",
+      "lastLogin": "",
+      "points": 96,
+      "contribution": 3600
+    },
+    {
+      "name": "Lynce",
+      "rank": "a Member",
+      "level": 268,
+      "status": "offline",
+      "lastLogin": "06/11/2026 16:50:17",
+      "points": 14,
+      "contribution": 0
+    },
+    {
+      "name": "Geleiarosagostozin",
+      "rank": "a Member",
+      "level": 344,
+      "status": "offline",
+      "lastLogin": "08/11/2026 06:59:11",
+      "points": 74,
+      "contribution": 0
+    },
+    {
+      "name": "Hallsen",
+      "rank": "a Member",
+      "level": 347,
+      "status": "offline",
+      "lastLogin": "05/11/2026 19:21:51",
+      "points": 4,
+      "contribution": 900
+    },
+    {
+      "name": "Steev Nazona",
+      "rank": "a Member",
+      "level": 354,
+      "status": "offline",
+      "lastLogin": "08/11/2026 15:40:41",
+      "points": 6,
+      "contribution": 900
+    },
+    {
+      "name": "Howls",
+      "rank": "a Member",
+      "level": 313,
+      "status": "offline",
+      "lastLogin": "08/11/2026 18:50:03",
+      "points": 0,
+      "contribution": 1800
+    },
+    {
+      "name": "Alice Ferrari",
+      "rank": "a Member",
+      "level": 259,
+      "status": "offline",
+      "lastLogin": "07/11/2026 01:01:57",
+      "points": 0,
+      "contribution": 0
+    },
+    {
+      "name": "Hiimeko",
+      "rank": "a Member",
+      "level": 253,
+      "status": "online",
+      "lastLogin": "",
+      "points": 18,
+      "contribution": 0
+    },
+    {
+      "name": "Danky",
+      "rank": "a Member",
+      "level": 375,
+      "status": "online",
+      "lastLogin": "",
+      "points": 84,
+      "contribution": 0
+    },
+    {
+      "name": "Cephajr",
+      "rank": "a Member",
+      "level": 399,
+      "status": "offline",
+      "lastLogin": "08/11/2026 16:35:12",
+      "points": 68,
+      "contribution": 0
+    },
+    {
+      "name": "Batatovisk",
+      "rank": "a Member",
+      "level": 425,
+      "status": "offline",
+      "lastLogin": "06/11/2026 06:59:27",
+      "points": 4,
+      "contribution": 0
+    },
+    {
+      "name": "Joaohp",
+      "rank": "a Member",
+      "level": 375,
+      "status": "offline",
+      "lastLogin": "08/11/2026 19:14:43",
+      "points": 64,
+      "contribution": 2700
+    },
+    {
+      "name": "Sraraujo",
+      "rank": "a Member",
+      "level": 428,
+      "status": "offline",
+      "lastLogin": "08/11/2026 18:49:48",
+      "points": 100,
+      "contribution": 900
+    },
+    {
+      "name": "Syck",
+      "rank": "a Member",
+      "level": 440,
+      "status": "offline",
+      "lastLogin": "06/11/2026 11:40:56",
+      "points": 0,
+      "contribution": 1800
+    },
+    {
+      "name": "Fezespurissimas",
+      "rank": "a Member",
+      "level": 397,
+      "status": "online",
+      "lastLogin": "",
+      "points": 44,
+      "contribution": 1200
+    },
+    {
+      "name": "Kadvoo",
+      "rank": "a Member",
+      "level": 464,
+      "status": "online",
+      "lastLogin": "",
+      "points": 164,
+      "contribution": 0
+    },
+    {
+      "name": "Wallkerjackx",
+      "rank": "a Member",
+      "level": 313,
+      "status": "offline",
+      "lastLogin": "07/11/2026 02:06:45",
+      "points": 20,
+      "contribution": 0
+    },
+    {
+      "name": "Monloh",
+      "rank": "a Member",
+      "level": 321,
+      "status": "online",
+      "lastLogin": "",
+      "points": 6,
+      "contribution": 900
+    },
+    {
+      "name": "Nihao",
+      "rank": "a Member",
+      "level": 414,
+      "status": "offline",
+      "lastLogin": "07/11/2026 21:16:00",
+      "points": 30,
+      "contribution": 4500
+    },
+    {
+      "name": "Wanted Yzi",
+      "rank": "a Member",
+      "level": 400,
+      "status": "offline",
+      "lastLogin": "08/11/2026 17:34:00",
+      "points": 20,
+      "contribution": 0
+    }
+  ]
+}

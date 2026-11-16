@@ -1,0 +1,222 @@
+{
+  "exportedAt": "2026-09-27 21:39:49",
+  "members": [
+    {
+      "status": "online",
+      "name": "Kd O Lobinho",
+      "dailiesCompleted": 37,
+      "contribution": 5000,
+      "level": 422,
+      "rank": "the Leader",
+      "lastLogin": ""
+    },
+    {
+      "status": "offline",
+      "name": "Tec",
+      "dailiesCompleted": 6,
+      "contribution": 0,
+      "level": 375,
+      "rank": "a Vice-Leader",
+      "lastLogin": "27/09/2026 18:18:54"
+    },
+    {
+      "status": "online",
+      "name": "Zahal",
+      "dailiesCompleted": 32,
+      "contribution": 5700,
+      "level": 369,
+      "rank": "a Vice-Leader",
+      "lastLogin": ""
+    },
+    {
+      "status": "offline",
+      "name": "Hey Ammy",
+      "dailiesCompleted": 21,
+      "contribution": 5000,
+      "level": 406,
+      "rank": "a Vice-Leader",
+      "lastLogin": "27/09/2026 18:25:55"
+    },
+    {
+      "status": "online",
+      "name": "Rathir",
+      "dailiesCompleted": 14,
+      "contribution": 6800,
+      "level": 425,
+      "rank": "a Vice-Leader",
+      "lastLogin": ""
+    },
+    {
+      "status": "online",
+      "name": "Howls",
+      "dailiesCompleted": 1,
+      "contribution": 0,
+      "level": 152,
+      "rank": "a Member",
+      "lastLogin": ""
+    },
+    {
+      "status": "online",
+      "name": "Jhonyplay",
+      "dailiesCompleted": 23,
+      "contribution": 0,
+      "level": 258,
+      "rank": "a Member",
+      "lastLogin": ""
+    },
+    {
+      "status": "offline",
+      "name": "Cephajr",
+      "dailiesCompleted": 8,
+      "contribution": 0,
+      "level": 346,
+      "rank": "a Member",
+      "lastLogin": "25/09/2026 22:53:29"
+    },
+    {
+      "status": "online",
+      "name": "Jutdox",
+      "dailiesCompleted": 38,
+      "contribution": 0,
+      "level": 378,
+      "rank": "a Member",
+      "lastLogin": ""
+    },
+    {
+      "status": "online",
+      "name": "Joaohp",
+      "dailiesCompleted": 19,
+      "contribution": 0,
+      "level": 260,
+      "rank": "a Member",
+      "lastLogin": ""
+    },
+    {
+      "status": "online",
+      "name": "Dermochelys",
+      "dailiesCompleted": 6,
+      "contribution": 1000,
+      "level": 300,
+      "rank": "a Member",
+      "lastLogin": ""
+    },
+    {
+      "status": "offline",
+      "name": "Fezespurissimas",
+      "dailiesCompleted": 13,
+      "contribution": 3800,
+      "level": 291,
+      "rank": "a Member",
+      "lastLogin": "27/09/2026 18:17:13"
+    },
+    {
+      "status": "offline",
+      "name": "Gallardo",
+      "dailiesCompleted": 6,
+      "contribution": 300,
+      "level": 308,
+      "rank": "a Member",
+      "lastLogin": "23/09/2026 11:04:19"
+    },
+    {
+      "status": "online",
+      "name": "Syck",
+      "dailiesCompleted": 41,
+      "contribution": 4100,
+      "level": 416,
+      "rank": "a Member",
+      "lastLogin": ""
+    },
+    {
+      "status": "online",
+      "name": "Romerb",
+      "dailiesCompleted": 40,
+      "contribution": 7600,
+      "level": 364,
+      "rank": "a Member",
+      "lastLogin": ""
+    },
+    {
+      "status": "offline",
+      "name": "Tu Lokita",
+      "dailiesCompleted": 8,
+      "contribution": 0,
+      "level": 316,
+      "rank": "a Member",
+      "lastLogin": "27/09/2026 14:42:49"
+    },
+    {
+      "status": "online",
+      "name": "Thalequei",
+      "dailiesCompleted": 9,
+      "contribution": 7000,
+      "level": 321,
+      "rank": "a Member",
+      "lastLogin": ""
+    },
+    {
+      "status": "online",
+      "name": "Thali",
+      "dailiesCompleted": 11,
+      "contribution": 2000,
+      "level": 353,
+      "rank": "a Member",
+      "lastLogin": ""
+    },
+    {
+      "status": "offline",
+      "name": "Hyuzen",
+      "dailiesCompleted": 42,
+      "contribution": 7000,
+      "level": 403,
+      "rank": "a Member",
+      "lastLogin": "27/09/2026 17:59:51"
+    },
+    {
+      "status": "online",
+      "name": "Sraraujo",
+      "dailiesCompleted": 2,
+      "contribution": 0,
+      "level": 251,
+      "rank": "a Member",
+      "lastLogin": ""
+    },
+    {
+      "status": "offline",
+      "name": "A Z A R A D O",
+      "dailiesCompleted": 35,
+      "contribution": 900,
+      "level": 402,
+      "rank": "a Member",
+      "lastLogin": "26/09/2026 21:57:01"
+    },
+    {
+      "status": "online",
+      "name": "Wanted Yzi",
+      "dailiesCompleted": 1,
+      "contribution": 0,
+      "level": 220,
+      "rank": "a Member",
+      "lastLogin": ""
+    },
+    {
+      "status": "online",
+      "name": "Nihao",
+      "dailiesCompleted": 28,
+      "contribution": 3600,
+      "level": 378,
+      "rank": "a Member",
+      "lastLogin": ""
+    },
+    {
+      "status": "online",
+      "name": "Raveex",
+      "dailiesCompleted": 11,
+      "contribution": 900,
+      "level": 280,
+      "rank": "a Member",
+      "lastLogin": ""
+    }
+  ],
+  "guild": "Cafe Do Psyduck"
+}
