@@ -19,4 +19,4 @@ Controle semanal da contribuição dos membros da guild (Cafe Do Psyduck): ponto
 
 A [página publicada](https://claude.ai/artifact/NHRNB1TQZpToikwrJWMDQx) guarda os dados num banco compartilhado: quem tiver acesso de Colaborador ou acima edita, quem tiver só leitura apenas vê. Abrir `index.html` direto no navegador também funciona, mas aí os dados ficam só naquele navegador e não se misturam com os da página publicada.
 
-`exports/` guarda os exports originais do jogo já importados (06/09, 27/09 e 08/11/2026).
+`exports/` guarda os exports originais do jogo já importados (06/09, 27/09, 08/11 e 15/11/2026).
