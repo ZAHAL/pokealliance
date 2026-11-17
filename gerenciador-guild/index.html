@@ -292,8 +292,8 @@ td input[type="checkbox"] { width: 1.25rem; height: 1.25rem; accent-color: var(-
     <div class="tiles" id="week-tiles" hidden></div>
     <div class="tablebox" id="week-box" hidden><table id="week-table"></table></div>
     <div class="empty" id="week-empty">
-      <b>Nenhuma semana importada ainda</b>
-      Exporte os membros da guild no jogo e use “Importar export do jogo” com o JSON ou o CSV. Cada arquivo vira uma semana.
+      <b id="empty-title">Carregando dados da guild…</b>
+      <span id="empty-text"></span>
     </div>
   </section>
 
@@ -316,7 +316,7 @@ const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;'
 const num = v => { const n = Number(v); return Number.isFinite(n) && n > 0 ? Math.round(n) : 0; };
 
 const state = { config: { ...DEFAULT_CONFIG }, weeks: {} };
-const ui = { tab: 'semana', week: null, canWrite: true, sort: { semana: ['total', -1], geral: ['total', -1] }, pending: [], confirmDel: false };
+const ui = { load: 'loading', tab: 'semana', week: null, canWrite: true, sort: { semana: ['total', -1], geral: ['total', -1] }, pending: [], confirmDel: false };
 
 /* ---------- Datas e semanas (segunda a domingo) ---------- */
 const pad = n => String(n).padStart(2, '0');
@@ -403,6 +403,15 @@ const SYNC_TEXT = {
   saving: 'Salvando…',
   readonly: 'Somente leitura: seu acesso não permite editar',
   error: 'Não deu para falar com o banco de dados. Recarregue a página.',
+  nodata: 'Sem acesso aos dados: entre na sua conta do Claude',
+};
+// O que o quadro vazio diz em cada situação
+const EMPTY = {
+  loading: ['Carregando dados da guild…', ''],
+  empty: ['Nenhuma semana importada ainda', 'Exporte os membros da guild no jogo e use “Importar export do jogo” com o JSON ou o CSV. Cada arquivo vira uma semana.'],
+  emptyRead: ['Nenhuma semana importada ainda', 'Quando a liderança importar o export do jogo, as semanas aparecem aqui.'],
+  nodata: ['Entre na sua conta do Claude para ver os dados', 'Os dados da guild ficam guardados na conta do Claude e só aparecem para quem está logado e recebeu acesso a esta página. Entre em claude.ai com a sua conta e abra o link de novo. Se continuar vazio, peça para quem compartilhou conferir se o seu e-mail está no compartilhamento.'],
+  error: ['Não deu para carregar os dados', 'O banco de dados não respondeu. Recarregue a página em alguns segundos.'],
 };
 function clone(o) { return JSON.parse(JSON.stringify(o)); }
 function merge(dst, src) {
@@ -421,6 +430,7 @@ const store = {
       const raw = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
       if (raw && raw.weeks) { state.weeks = raw.weeks; state.config = { ...DEFAULT_CONFIG, ...raw.config }; }
     } catch (e) {}
+    ui.load = 'done';
     this.setMode('local');
     render();
   },
@@ -429,16 +439,22 @@ const store = {
     if (!window.claude || typeof window.claude.use !== 'function') return this.loadLocal();
     let db = null, user = null;
     try { [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]); } catch (e) {}
-    if (!db) return this.loadLocal();
+    if (!db) {
+      // Dentro do claude.ai sem banco = visitante não logado ou sem acesso. Não cai no modo local,
+      // senão a pessoa vê uma guild vazia e pode importar dados que só ficariam no navegador dela.
+      ui.canWrite = false; ui.load = 'nodata';
+      this.setMode('nodata'); render();
+      return;
+    }
     this.db = db;
     try { if (user && (await user.can('data.write')) === false) ui.canWrite = false; } catch (e) {}
-    this.timer = setTimeout(() => this.setMode('error'), 10000);
+    this.timer = setTimeout(() => { if (ui.load === 'loading') ui.load = 'error'; this.setMode('error'); render(); }, 10000);
     const got = () => { clearTimeout(this.timer); if (!this.busy) this.idle(); };
     db.collection('weeks').onSnapshot(snap => {
       const weeks = {};
       for (const d of snap.docs) { const body = d.data(); if (body && body.members) weeks[d.id] = clone(body); }
-      state.weeks = weeks; got(); render();
-    }, () => { clearTimeout(this.timer); this.setMode('error'); });
+      state.weeks = weeks; ui.load = 'done'; got(); render();
+    }, () => { clearTimeout(this.timer); if (ui.load === 'loading') ui.load = 'error'; this.setMode('error'); render(); });
     db.doc('config/main').onSnapshot(snap => {
       if (snap.exists) state.config = { ...DEFAULT_CONFIG, ...snap.data() };
       got(); render();
@@ -526,7 +542,11 @@ function renderWeek() {
   const has = !!ui.week;
   for (const id of ['weekbar', 'week-tiles', 'week-box']) $(id).hidden = !has;
   $('week-empty').hidden = has;
-  if (!has) return;
+  if (!has) {
+    const [t, d] = EMPTY[ui.load === 'done' ? (ui.canWrite ? 'empty' : 'emptyRead') : ui.load];
+    $('empty-title').textContent = t; $('empty-text').textContent = d;
+    return;
+  }
   const sel = $('week');
   sel.innerHTML = ids.map(id => `<option value="${id}">Semana de ${weekLabel(id)}</option>`).join('');
   sel.value = ui.week;
