@@ -5,7 +5,7 @@ Ferramentas e guias do PokeAlliance feitos com o Claude, num lugar só.
 | Pasta | O que é | Página publicada |
 |---|---|---|
 | [`calculadora-boost/`](calculadora-boost/) | Tabela de custo de criação das pedras de boost (+0 a +50, 18 tipos), com craftar vs. comprar pronto | [Calculadora de Boost](https://claude.ai/code/artifact/4cb89918-7c3c-449c-af04-173395f98963) |
-| [`calculadora-hazard/`](calculadora-hazard/) | Dano das duplas por Hazard: testa as 15 duplas do time, runa de ataque (0 a 5), Brute Berry e precisão | — |
+| [`calculadora-hazard/`](calculadora-hazard/) | Dano das duplas por Hazard: testa as 15 duplas do time, runa de ataque (0 a 5), Brute Berry e precisão | [Calculadora de Hazard](https://claude.ai/artifact/3c472z5c26wd9FakVLMiTK) |
 | [`hazard-tasks/`](hazard-tasks/) | Checklist das quests de Hazard por NPC, na ordem de fazer (sozinho primeiro, hunt lv alto por último) | — |
 | [`guia-atk5/`](guia-atk5/) | Plano de pokelogs até 1.600 pts (ATK 5, +10% de ATK), em seis fases | [Pokelog ATK 5](https://claude.ai/code/artifact/dd017413-268a-47e8-8168-4c50f3bcc87f) |
 | — | Briefing de sprite do Comandante Zahal | [Briefing de sprite](https://claude.ai/code/artifact/309475c7-1aed-4c67-b921-94f7235a88b8) |

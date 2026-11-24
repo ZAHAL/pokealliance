@@ -40,7 +40,7 @@
     font-family: var(--font-body);
     line-height: 1.5;
   }
-  .page{ max-width: 1040px; margin: 0 auto; padding: 40px 16px 64px; display: flex; flex-direction: column; gap: 24px; }
+  .page{ max-width: 1040px; margin: 0 auto; padding-block: 40px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; gap: 24px; }
   .eyebrow{ margin: 0; font-family: var(--font-mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
   h1{ margin: 4px 0 6px; font-family: var(--font-display); font-weight: 700; font-size: clamp(28px, 5vw, 40px); text-wrap: balance; }
   .lede{ margin: 0; max-width: 66ch; color: var(--text-muted); font-size: 15px; }
