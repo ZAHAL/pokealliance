@@ -1,0 +1,459 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calculadora de Hazard</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    color-scheme: dark;
+    --bg: #0e111a;
+    --surface: #191d29;
+    --field: #1c2231;
+    --border: #2a3145;
+    --border-soft: #232939;
+    --text: #eef1f8;
+    --text-muted: #99a2b8;
+    --text-faint: #626b82;
+    --gold: #f0c05a;
+    --accent: #4a9be0;
+    --accent-soft: #4a9be026;
+    --good: #4caf6b;
+    --good-soft: #4caf6b22;
+    --bad: #e0654a;
+    --berry: #c75bd6;
+    --r0: #b9c0d4; --r1: #3fcf8e; --r2: #4a9be0; --r3: #a06cf0; --r4: #f0a53c; --r5: #f0506e;
+    --radius: 14px;
+    --font-display: 'Rajdhani', 'Trebuchet MS', sans-serif;
+    --font-body: 'Public Sans', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', 'SFMono-Regular', monospace;
+  }
+  *{ box-sizing: border-box; }
+  body{
+    margin: 0;
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 12% -10%, #2a3a5c33, transparent 45%),
+      radial-gradient(circle at 100% 0%, #3a2a5c26, transparent 40%);
+    color: var(--text);
+    font-family: var(--font-body);
+    line-height: 1.5;
+  }
+  .page{ max-width: 1040px; margin: 0 auto; padding: 40px 16px 64px; display: flex; flex-direction: column; gap: 24px; }
+  .eyebrow{ margin: 0; font-family: var(--font-mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+  h1{ margin: 4px 0 6px; font-family: var(--font-display); font-weight: 700; font-size: clamp(28px, 5vw, 40px); text-wrap: balance; }
+  .lede{ margin: 0; max-width: 66ch; color: var(--text-muted); font-size: 15px; }
+
+  .panel{ background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; }
+  .panel-title{ margin: 0 0 14px; font-family: var(--font-display); font-weight: 600; font-size: 15px; letter-spacing: .03em; text-transform: uppercase; color: var(--text-muted); }
+  .panel-title span{ color: var(--accent); }
+
+  .settings{ display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+  label.field{ display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--text-muted); }
+  .hint{ font-size: 12px; color: var(--text-faint); }
+  input[type="text"], input[type="number"], select{
+    background: var(--field); color: var(--text); border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 10px; font: inherit; font-size: 14px; width: 100%;
+  }
+  input[type="number"]{ font-family: var(--font-mono); }
+  input:focus, select:focus{ outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  input::placeholder{ color: var(--text-faint); }
+
+  .mons{ display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 12px; }
+  .mon{ background: var(--field); border: 1px solid var(--border-soft); border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+  .mon.berry-on{ border-color: color-mix(in srgb, var(--berry) 55%, var(--border)); }
+  .mon-row{ display: grid; grid-template-columns: 1fr 110px; gap: 8px; }
+  .checks{ display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--text-muted); }
+  .checks label{ display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+  .checks input{ accent-color: var(--berry); width: 16px; height: 16px; }
+  .mon-out{ display: flex; justify-content: space-between; align-items: baseline; font-size: 13px; color: var(--text-muted); }
+  .mon-out b{ font-family: var(--font-mono); font-size: 16px; color: var(--text); }
+  .tag-berry{ font-family: var(--font-mono); font-size: 11px; color: var(--berry); }
+
+  .cards{ display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+  .card{ background: var(--field); border: 1px solid var(--border-soft); border-radius: 10px; padding: 14px; }
+  .card h3{ margin: 0 0 4px; font-family: var(--font-display); font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); font-weight: 600; }
+  .card .big{ font-family: var(--font-display); font-size: 30px; font-weight: 700; line-height: 1.1; }
+  .card .sub{ font-size: 13px; color: var(--text-muted); }
+
+  .tip-list{ margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .tip-list li{ background: var(--field); border-left: 3px solid var(--accent); border-radius: 6px; padding: 10px 12px; font-size: 14px; }
+  .tip-list li.berry{ border-left-color: var(--berry); }
+  .tip-list li.rune{ border-left-color: var(--gold); }
+  .tip-list li.warn{ border-left-color: var(--bad); }
+  .tip-list b{ color: var(--text); }
+
+  .table-wrap{ overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table{ border-collapse: collapse; width: 100%; font-size: 14px; }
+  th, td{ padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border-soft); white-space: nowrap; }
+  th{ font-family: var(--font-display); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; font-size: 12px; color: var(--text-muted); }
+  td.num, th.num{ text-align: right; font-family: var(--font-mono); }
+  tr.best td{ background: var(--good-soft); }
+  .hz{ display: inline-block; min-width: 34px; text-align: center; font-family: var(--font-mono); font-weight: 600; padding: 2px 6px; border-radius: 6px; background: #ffffff0d; }
+  .hz.cur{ background: var(--accent); color: #0e111a; }
+  .hz.none{ color: var(--text-faint); }
+  .rune-dot{ display: inline-block; width: 9px; height: 9px; border-radius: 2px; transform: rotate(45deg); margin-right: 6px; vertical-align: 1px; }
+  .muted{ color: var(--text-muted); }
+  .faint{ color: var(--text-faint); }
+  .gain{ color: var(--good); font-family: var(--font-mono); }
+
+  .ref td.hit{ background: var(--good-soft); color: var(--good); }
+  .ref td.cur-col{ outline: 1px solid var(--accent); outline-offset: -1px; }
+  .ref td.typo{ text-decoration: underline dotted var(--bad); text-underline-offset: 3px; }
+  .pair-pick{ max-width: 340px; }
+  .foot{ font-size: 13px; color: var(--text-faint); }
+  .row-actions{ display: flex; gap: 8px; flex-wrap: wrap; }
+  button{ background: var(--field); color: var(--text-muted); border: 1px solid var(--border); border-radius: 8px; padding: 7px 12px; font: inherit; font-size: 13px; cursor: pointer; }
+  button:hover{ color: var(--text); border-color: var(--accent); }
+
+  @media (max-width: 560px){
+    .panel{ padding: 14px; }
+    .mon-row{ grid-template-columns: 1fr 96px; }
+  }
+</style>
+</head>
+<body>
+<main class="page">
+  <header>
+    <p class="eyebrow">PokeAlliance · Hazard</p>
+    <h1>Calculadora de dano para Hazard</h1>
+    <p class="lede">Coloque o dano dos seus 6 pokémons. A página testa todas as duplas, mostra até que hazard cada uma chega com a sua runa de ataque, quanto falta pro próximo e o que muda se você usar Brute Berry ou subir a runa.</p>
+  </header>
+
+  <section class="panel">
+    <h2 class="panel-title">Configuração</h2>
+    <div class="settings">
+      <label class="field">Runa de ataque atual
+        <select id="rune"></select>
+      </label>
+      <label class="field">Precisão
+        <input type="number" id="precision" min="0" step="5" placeholder="não considerar">
+        <span class="hint">Em branco = ignora a coluna Precisão da tabela.</span>
+      </label>
+      <label class="field">Ganho de dano da Brute Berry (%)
+        <input type="number" id="berryPct" min="0" step="0.01">
+        <span class="hint">Padrão 3,83%: Meganium 287k → 298k. A berry dá +5% de ATK, mas o dano sobe menos.</span>
+      </label>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2 class="panel-title">Seu time <span>· dano em k</span></h2>
+    <div class="mons" id="mons"></div>
+    <div class="row-actions" style="margin-top:12px">
+      <button type="button" id="berryAll">Simular berry em todos</button>
+      <button type="button" id="berryReal">Voltar berry como está no jogo</button>
+      <button type="button" id="reset">Restaurar time padrão</button>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2 class="panel-title">Resumo</h2>
+    <div class="cards" id="summary"></div>
+  </section>
+
+  <section class="panel">
+    <h2 class="panel-title">Recomendações</h2>
+    <ul class="tip-list" id="tips"></ul>
+  </section>
+
+  <section class="panel">
+    <h2 class="panel-title">Todas as duplas <span>· hazard por runa</span></h2>
+    <div class="table-wrap"><table id="pairs"></table></div>
+  </section>
+
+  <section class="panel">
+    <h2 class="panel-title">Tabela de referência <span>· dano necessário</span></h2>
+    <label class="field pair-pick">Destacar a dupla
+      <select id="refPair"></select>
+    </label>
+    <div class="table-wrap" style="margin-top:12px"><table class="ref" id="ref"></table></div>
+    <p class="foot">Valores copiados da imagem. Os sublinhados em vermelho parecem erro da tabela original (o valor não cresce em relação ao hazard anterior). A Runa 3 no Hazard 5 estava coberta pelo cursor; usei 610k. Para corrigir, edite <code>NEED</code> no código.</p>
+  </section>
+</main>
+
+<script>
+// Dano necessário (k) por hazard, colunas Runa 0..5, e precisão exigida.
+const NEED = [
+  [560,548,537,526,515,505, 0],
+  [578,566,555,545,535,522, 0],
+  [596,584,573,562,552,539, 0],
+  [614,600,590,579,568,556, 0],
+  [632,619,608,596,585,573, 0],
+  [630,636,623,610,598,586, 5],
+  [663,649,638,625,614,603,10],
+  [676,662,650,638,624,615,15],
+  [689,675,662,650,636,625,20],
+  [702,688,675,662,650,638,25],
+  [715,700,685,671,650,645,30],
+  [730,716,702,689,676,664,35],
+  [740,725,712,699,685,673,40],
+  [755,740,726,712,699,686,45],
+  [765,750,726,722,708,695,50],
+  [780,765,750,736,722,704,55],
+  [815,795,779,763,748,733,60],
+  [845,825,807,791,775,760,65],
+];
+const RUNES = [
+  {name:'Runa 0', bonus:'0%',   color:'var(--r0)'},
+  {name:'Runa 1', bonus:'+2%',  color:'var(--r1)'},
+  {name:'Runa 2', bonus:'+4%',  color:'var(--r2)'},
+  {name:'Runa 3', bonus:'+6%',  color:'var(--r3)'},
+  {name:'Runa 4', bonus:'+8%',  color:'var(--r4)'},
+  {name:'Runa 5', bonus:'+10%', color:'var(--r5)'},
+];
+const DEFAULT_TEAM = [
+  {name:'Tangrowth',        dmg:277, measuredWithBerry:false, useBerry:false},
+  {name:'Smeargle (grass)', dmg:301, measuredWithBerry:true,  useBerry:true},
+  {name:'Gogoat',           dmg:280, measuredWithBerry:false, useBerry:false},
+  {name:'Shiny Gogoat',     dmg:294, measuredWithBerry:true,  useBerry:true},
+  {name:'Meganium',         dmg:287, measuredWithBerry:false, useBerry:false},
+  {name:'Shiny Tangrowth',  dmg:299, measuredWithBerry:true,  useBerry:true},
+];
+const DEFAULT_BERRY = +((298/287 - 1) * 100).toFixed(2); // 3.83
+const KEY = 'pka-hazard-calc-v1';
+
+let state = load();
+
+function load(){
+  try{
+    const s = JSON.parse(localStorage.getItem(KEY));
+    if(s && Array.isArray(s.team) && s.team.length) return s;
+  }catch(e){}
+  return {team: structuredClone(DEFAULT_TEAM), rune:0, precision:'', berryPct:DEFAULT_BERRY};
+}
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){} }
+
+const $ = id => document.getElementById(id);
+const fmt = n => (Math.round(n*10)/10).toLocaleString('pt-BR', {maximumFractionDigits:1}) + 'k';
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function berryF(){ return 1 + (Number(state.berryPct)||0)/100; }
+function baseDmg(m){ return (Number(m.dmg)||0) / (m.measuredWithBerry ? berryF() : 1); }
+function dmgOf(m, berry = m.useBerry){ return baseDmg(m) * (berry ? berryF() : 1); }
+
+function precisionOk(h){
+  if(state.precision === '' || state.precision == null) return true;
+  return Number(state.precision) >= NEED[h][6];
+}
+// Maior hazard que o dano alcança com a runa r (-1 = nenhum).
+function hazardFor(dmg, r){
+  let best = -1;
+  for(let h = 0; h < NEED.length; h++) if(dmg >= NEED[h][r] && precisionOk(h)) best = h;
+  return best;
+}
+// Próximo hazard acima do atual e quanto falta.
+function nextGoal(dmg, r){
+  const cur = hazardFor(dmg, r);
+  for(let h = cur + 1; h < NEED.length; h++){
+    if(!precisionOk(h)) return {h, blocked:true, need: NEED[h][6]};
+    if(dmg < NEED[h][r]) return {h, missing: NEED[h][r] - dmg};
+  }
+  return null;
+}
+
+function pairs(){
+  const t = state.team, out = [];
+  for(let i = 0; i < t.length; i++) for(let j = i+1; j < t.length; j++){
+    const dmg = dmgOf(t[i]) + dmgOf(t[j]);
+    out.push({i, j, dmg, hz: RUNES.map((_, r) => hazardFor(dmg, r))});
+  }
+  return out.sort((a,b) => b.dmg - a.dmg);
+}
+const pairName = p => `${state.team[p.i].name} + ${state.team[p.j].name}`;
+
+// Melhor jeito de dividir o time em duplas (maior soma de hazards; empate → maior hazard mínimo).
+function bestSplit(){
+  const n = state.team.length;
+  if(n < 2 || n % 2) return null;
+  const r = state.rune;
+  let best = null;
+  const rec = (left, acc) => {
+    if(!left.length){
+      const hs = acc.map(p => p.hz[r]);
+      const score = [hs.reduce((a,b)=>a+b,0), Math.min(...hs)];
+      if(!best || score[0] > best.score[0] || (score[0] === best.score[0] && score[1] > best.score[1])) best = {acc:[...acc], score};
+      return;
+    }
+    const [a, ...rest] = left;
+    rest.forEach((b, k) => {
+      const dmg = dmgOf(state.team[a]) + dmgOf(state.team[b]);
+      acc.push({i:a, j:b, dmg, hz: RUNES.map((_, rr) => hazardFor(dmg, rr))});
+      rec(rest.filter((_, kk) => kk !== k), acc);
+      acc.pop();
+    });
+  };
+  rec([...Array(n).keys()], []);
+  return best;
+}
+
+function renderSettings(){
+  $('rune').innerHTML = RUNES.map((r, i) => `<option value="${i}">${r.name} (${r.bonus})</option>`).join('');
+  $('rune').value = state.rune;
+  $('precision').value = state.precision;
+  $('berryPct').value = state.berryPct;
+}
+
+function renderMons(){
+  $('mons').innerHTML = state.team.map((m, i) => `
+    <div class="mon ${m.useBerry ? 'berry-on' : ''}" data-i="${i}">
+      <div class="mon-row">
+        <input type="text" data-f="name" value="${esc(m.name)}" aria-label="Nome do pokémon ${i+1}" placeholder="Nome">
+        <input type="number" data-f="dmg" value="${m.dmg}" min="0" step="1" aria-label="Dano de ${esc(m.name)} em k">
+      </div>
+      <div class="checks">
+        <label title="Marque se o dano digitado já foi medido com a berry ativa"><input type="checkbox" data-f="measuredWithBerry" ${m.measuredWithBerry?'checked':''}> dano medido com berry</label>
+        <label><input type="checkbox" data-f="useBerry" ${m.useBerry?'checked':''}> usar Brute Berry</label>
+      </div>
+      <div class="mon-out"><span>Sem berry <b style="font-size:13px">${fmt(baseDmg(m))}</b></span>
+        <span>No cálculo <b>${fmt(dmgOf(m))}</b> ${m.useBerry ? '<span class="tag-berry">berry</span>' : ''}</span></div>
+    </div>`).join('');
+}
+
+function hzLabel(h){ return h < 0 ? '—' : h; }
+
+function renderSummary(ps){
+  const r = state.rune, top = ps[0], split = bestSplit();
+  const ng = nextGoal(top.dmg, r);
+  const totalTeam = state.team.reduce((s, m) => s + dmgOf(m), 0);
+  $('summary').innerHTML = `
+    <div class="card"><h3>Melhor dupla</h3><div class="big">Hazard ${hzLabel(top.hz[r])}</div>
+      <div class="sub">${esc(pairName(top))}<br>${fmt(top.dmg)} com ${RUNES[r].name}</div></div>
+    <div class="card"><h3>Próximo hazard</h3>${ng
+      ? (ng.blocked ? `<div class="big">Hazard ${ng.h}</div><div class="sub">Precisa de precisão ${ng.need}</div>`
+                    : `<div class="big">+${fmt(ng.missing)}</div><div class="sub">faltam para o Hazard ${ng.h} com a melhor dupla</div>`)
+      : `<div class="big">Máximo</div><div class="sub">Já passa o Hazard 17</div>`}</div>
+    <div class="card"><h3>Divisão em 3 duplas</h3>${split
+      ? `<div class="big">${split.acc.map(p => hzLabel(p.hz[r])).join(' · ')}</div><div class="sub">${split.acc.map(p => esc(pairName(p))).join('<br>')}</div>`
+      : `<div class="sub">Precisa de número par de pokémons.</div>`}</div>
+    <div class="card"><h3>Berries em uso</h3><div class="big">${state.team.filter(m=>m.useBerry).length}/${state.team.length}</div>
+      <div class="sub">Dano somado do time: ${fmt(totalTeam)}</div></div>`;
+}
+
+function renderTips(ps){
+  const r = state.rune, top = ps[0], tips = [];
+  const curH = top.hz[r];
+
+  // Berry: o que muda na melhor dupla e qual pokémon sem berry rende mais.
+  const noBerry = state.team.map((m, i) => ({m, i})).filter(x => !x.m.useBerry);
+  if(noBerry.length){
+    // Dupla mais forte considerando berry em quem não tem.
+    let bestWith = null;
+    state.team.forEach((a, i) => state.team.forEach((b, j) => {
+      if(j <= i) return;
+      const dmg = dmgOf(a, true) + dmgOf(b, true);
+      if(!bestWith || dmg > bestWith.dmg) bestWith = {i, j, dmg, h: hazardFor(dmg, r)};
+    }));
+    const needsBerry = [bestWith.i, bestWith.j].filter(k => !state.team[k].useBerry).map(k => state.team[k].name);
+    if(bestWith.h > curH){
+      tips.push({cls:'berry', html:`Com berry em <b>${esc(needsBerry.join(' e '))}</b>, a dupla <b>${esc(pairName(bestWith))}</b> chega a ${fmt(bestWith.dmg)} → <b>Hazard ${bestWith.h}</b> (hoje o máximo é ${hzLabel(curH)}).`});
+    } else {
+      const gains = noBerry.map(x => `${esc(x.m.name)} +${fmt(dmgOf(x.m,true) - dmgOf(x.m,false))}`).join(', ');
+      tips.push({cls:'berry', html:`Colocar berry em quem ainda não tem não sobe o hazard da melhor dupla com ${RUNES[r].name}. Ganho por pokémon: ${gains}.`});
+    }
+  } else {
+    tips.push({cls:'berry', html:`Todos estão com berry. Lembre que ela dura <b>1h</b>: ative perto da hora do hazard.`});
+  }
+
+  // Berry só onde importa: pokémon da melhor dupla com berry que não precisariam dela.
+  const topMons = [top.i, top.j];
+  const withoutBerryDmg = dmgOf(state.team[top.i], false) + dmgOf(state.team[top.j], false);
+  if(topMons.some(k => state.team[k].useBerry) && hazardFor(withoutBerryDmg, r) === curH){
+    tips.push({cls:'berry', html:`A melhor dupla faz Hazard ${hzLabel(curH)} mesmo <b>sem berry</b> (${fmt(withoutBerryDmg)}). Dá pra economizar a berry nesse hazard.`});
+  }
+
+  // Runa: menor runa que sobe o hazard da melhor dupla.
+  if(r < 5){
+    const up = RUNES.findIndex((_, rr) => rr > r && top.hz[rr] > curH);
+    if(up > 0){
+      tips.push({cls:'rune', html:`Subir para <b>${RUNES[up].name} (${RUNES[up].bonus})</b> leva <b>${esc(pairName(top))}</b> ao <b>Hazard ${top.hz[up]}</b>. Com Runa 5: Hazard ${hzLabel(top.hz[5])}.`});
+    } else {
+      tips.push({cls:'rune', html:`Nem a Runa 5 sobe o hazard da melhor dupla (fica no ${hzLabel(top.hz[5])}). Precisa de mais dano nos pokémons.`});
+    }
+  }
+
+  // Precisão bloqueando.
+  if(state.precision !== '' && state.precision != null){
+    const unclamped = (() => { let b=-1; for(let h=0;h<NEED.length;h++) if(top.dmg >= NEED[h][r]) b=h; return b; })();
+    if(unclamped > curH) tips.push({cls:'warn', html:`Seu dano já daria o <b>Hazard ${unclamped}</b>, mas a precisão (${state.precision}) só libera até o ${hzLabel(curH)}. O Hazard ${unclamped} pede precisão ${NEED[unclamped][6]}.`});
+  } else if(curH >= 5){
+    tips.push({cls:'warn', html:`A partir do Hazard 5 a tabela pede precisão (o Hazard ${curH} pede ${NEED[curH][6]}). Preencha sua precisão em Configuração para filtrar.`});
+  }
+
+  // Duplas empatadas no topo.
+  const sameH = ps.filter(p => p.hz[r] === curH).length;
+  if(sameH > 1) tips.push({cls:'', html:`<b>${sameH} duplas</b> chegam ao Hazard ${hzLabel(curH)} com ${RUNES[r].name}. Qualquer uma delas serve; a tabela abaixo mostra quanto sobra de folga.`});
+
+  $('tips').innerHTML = tips.map(t => `<li class="${t.cls}">${t.html}</li>`).join('');
+}
+
+function renderPairs(ps){
+  const r = state.rune;
+  const head = `<tr><th>Dupla</th><th class="num">Dano</th><th class="num">Folga / falta</th>${RUNES.map((x, i) =>
+    `<th class="num"><span class="rune-dot" style="background:${x.color}"></span>R${i}</th>`).join('')}</tr>`;
+  const rows = ps.map((p, k) => {
+    const h = p.hz[r];
+    const slack = h >= 0 ? p.dmg - NEED[h][r] : null;
+    const ng = nextGoal(p.dmg, r);
+    const info = `${slack != null ? `<span class="gain">+${fmt(slack)}</span>` : ''}${ng && !ng.blocked ? ` <span class="faint">/ −${fmt(ng.missing)} p/ H${ng.h}</span>` : ''}`;
+    return `<tr class="${k===0?'best':''}"><td>${esc(pairName(p))}</td><td class="num">${fmt(p.dmg)}</td><td class="num">${info}</td>${
+      p.hz.map((x, rr) => `<td class="num"><span class="hz ${rr===r?'cur':''} ${x<0?'none':''}">${hzLabel(x)}</span></td>`).join('')}</tr>`;
+  }).join('');
+  $('pairs').innerHTML = `<thead>${head}</thead><tbody>${rows}</tbody>`;
+}
+
+function renderRef(ps){
+  const sel = $('refPair');
+  const prev = sel.value;
+  sel.innerHTML = ps.map((p, k) => `<option value="${p.i}-${p.j}">${esc(pairName(p))} (${fmt(p.dmg)})</option>`).join('');
+  if([...sel.options].some(o => o.value === prev)) sel.value = prev;
+  const [i, j] = sel.value.split('-').map(Number);
+  const dmg = dmgOf(state.team[i]) + dmgOf(state.team[j]);
+  const r = state.rune;
+  const head = `<tr><th>Hazard</th>${RUNES.map(x => `<th class="num"><span class="rune-dot" style="background:${x.color}"></span>${x.name} (${x.bonus})</th>`).join('')}<th class="num">Precisão</th></tr>`;
+  const rows = NEED.map((row, h) => `<tr><td><b>${h}</b></td>${row.slice(0,6).map((v, rr) => {
+      const typo = h > 0 && v <= NEED[h-1][rr];
+      const hit = dmg >= v && precisionOk(h);
+      return `<td class="num ${hit?'hit':''} ${rr===r?'cur-col':''} ${typo?'typo':''}" ${typo?'title="Parece erro na tabela original"':''}>${v}k</td>`;
+    }).join('')}<td class="num ${precisionOk(h)?'':'faint'}">${row[6]}</td></tr>`).join('');
+  $('ref').innerHTML = `<thead>${head}</thead><tbody>${rows}</tbody>`;
+}
+
+function render(full){
+  if(full) renderMons();
+  const ps = pairs();
+  renderSummary(ps); renderTips(ps); renderPairs(ps); renderRef(ps);
+  save();
+}
+
+// Eventos
+$('rune').addEventListener('change', e => { state.rune = +e.target.value; render(); });
+$('precision').addEventListener('input', e => { state.precision = e.target.value; render(); });
+$('berryPct').addEventListener('input', e => { state.berryPct = e.target.value; render(true); });
+$('refPair').addEventListener('change', () => render());
+$('mons').addEventListener('input', e => {
+  const card = e.target.closest('.mon'); if(!card) return;
+  const m = state.team[+card.dataset.i], f = e.target.dataset.f;
+  if(e.target.type === 'checkbox') m[f] = e.target.checked;
+  else m[f] = f === 'dmg' ? Number(e.target.value) : e.target.value;
+  // Texto/número: não re-renderiza os cards para não perder o foco; checkbox sim.
+  if(e.target.type === 'checkbox') render(true);
+  else { updateMonOut(card, m); render(); }
+});
+function updateMonOut(card, m){
+  card.querySelector('.mon-out').innerHTML = `<span>Sem berry <b style="font-size:13px">${fmt(baseDmg(m))}</b></span>
+    <span>No cálculo <b>${fmt(dmgOf(m))}</b> ${m.useBerry ? '<span class="tag-berry">berry</span>' : ''}</span>`;
+}
+$('berryAll').addEventListener('click', () => { state.team.forEach(m => m.useBerry = true); render(true); });
+$('berryReal').addEventListener('click', () => { state.team.forEach(m => m.useBerry = m.measuredWithBerry); render(true); });
+$('reset').addEventListener('click', () => {
+  state = {team: structuredClone(DEFAULT_TEAM), rune: state.rune, precision: state.precision, berryPct: DEFAULT_BERRY};
+  renderSettings(); render(true);
+});
+
+renderSettings();
+render(true);
+</script>
+</body>
+</html>
