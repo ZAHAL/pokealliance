@@ -280,6 +280,9 @@ const RUNES = [
   {name:'Runa 4', bonus:'+8%',  color:'var(--r4)'},
   {name:'Runa 5', bonus:'+10%', color:'var(--r5)'},
 ];
+// A tabela já desconta a runa no dano exigido. Para mostrar o dano "com runa",
+// multiplicamos o dano pelo bônus e o dano exigido também (fica na escala da Runa 0).
+const runeMult = (r = state.rune) => 1 + [0, 2, 4, 6, 8, 10][r] / 100;
 const MAX_BOOST = 85;
 // Medido no nível 473 (26/11/2026). A ordem define as duplas: [0,1], [2,3], [4,5].
 const DEFAULT_TEAM = [
@@ -449,8 +452,8 @@ function monHTML(m, i){
 }
 function ladderHTML(info){
   const r = state.rune, h = info.hz[r];
-  const lo = need(0, r) - 25, hi = need(NEED.length - 1, r) + 10;
-  const x = v => Math.max(0, Math.min(100, (v - lo) / (hi - lo) * 100));
+  const k = runeMult(r), lo = need(0, r) * k - 25, hi = need(NEED.length - 1, r) * k + 10;
+  const x = v => Math.max(0, Math.min(100, (v * k - lo) / (hi - lo) * 100));
   const ng = nextGoal(info.dmg, r);
   const label = k => k === 0 || k === NEED.length - 1 || k === h || (ng && k === ng.h) || k % 5 === 0;
   let ticks = '', labels = '';
@@ -491,7 +494,8 @@ function duoHTML(d){
     ${monHTML(state.team[j], j)}
     <div class="duo-foot">
       <div class="duo-score">
-        <div><div class="lbl">Dano total</div><div class="dmg">${fmt(info.dmg)}</div>
+        <div><div class="lbl">Dano total${r ? ` com ${RUNES[r].name}` : ''}</div><div class="dmg">${fmt(info.dmg * runeMult(r))}</div>
+          ${r ? `<div class="delta">sem runa ${fmt(info.dmg)} <span class="up">+${fmt(info.dmg * (runeMult(r) - 1))}</span></div>` : ''}
           ${Math.abs(diff) >= 0.05 ? `<div class="delta">jogo ${fmt(info.now)} <span class="up">${diff>0?'+':''}${fmt(diff)}</span></div>` : ''}</div>
         <div><div class="lbl" style="text-align:right">Aguenta</div><div class="hzbig"><small>H</small>${hzLabel(info.hz[r])}</div></div>
       </div>
