@@ -64,6 +64,10 @@
   .mon{ background: var(--field); border: 1px solid var(--border-soft); border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
   .mon.berry-on{ border-color: color-mix(in srgb, var(--berry) 55%, var(--border)); }
   .mon-row{ display: grid; grid-template-columns: 1fr 110px; gap: 8px; }
+  .mon-row.boost{ grid-template-columns: 1fr 1fr; }
+  .mon-row.boost label{ display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--text-faint); }
+  .sub-title{ margin: 18px 0 12px; font-family: var(--font-display); font-weight: 600; font-size: 13px; letter-spacing: .04em; text-transform: uppercase; color: var(--text-faint); }
+  .up{ color: var(--good); font-family: var(--font-mono); font-size: 12px; }
   .checks{ display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--text-muted); }
   .checks label{ display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
   .checks input{ accent-color: var(--berry); width: 16px; height: 16px; }
@@ -118,7 +122,7 @@
   <header>
     <p class="eyebrow">PokeAlliance · Hazard</p>
     <h1>Calculadora de dano para Hazard</h1>
-    <p class="lede">Coloque o dano dos seus 6 pokémons. A página testa todas as duplas, mostra até que hazard cada uma chega com a sua runa de ataque, quanto falta pro próximo e o que muda se você usar Brute Berry ou subir a runa.</p>
+    <p class="lede">Coloque o dano e o boost dos seus 6 pokémons. A página testa todas as duplas, mostra até que hazard cada uma chega com a sua runa de ataque, quanto falta pro próximo e o que muda se você usar Brute Berry, subir a runa, boostar os pokémons ou subir de nível.</p>
   </header>
 
   <section class="panel">
@@ -136,12 +140,35 @@
         <span class="hint">Padrão 3,83%: Meganium 287k → 298k. A berry dá +5% de ATK, mas o dano sobe menos.</span>
       </label>
     </div>
+    <h3 class="sub-title">Personagem, boost e medalhas</h3>
+    <div class="settings">
+      <label class="field">Seu nível agora
+        <input type="number" id="level" min="1" step="1">
+      </label>
+      <label class="field">Nível para simular
+        <input type="number" id="levelSim" min="1" step="1">
+      </label>
+      <label class="field">Ganho de dano por nível (%)
+        <input type="number" id="levelPct" min="0" step="0.01">
+        <span class="hint">Ainda sem medição: fica 0 até a gente calibrar.</span>
+      </label>
+      <label class="field">Ganho de dano por +1 de boost (%)
+        <input type="number" id="boostPct" min="0" step="0.01">
+        <span class="hint">Padrão 0,5%: Gardevoir 98,8k → 99,3k → 99,8k.</span>
+      </label>
+      <label class="field">Bônus extra de medalhas (%)
+        <input type="number" id="medalPct" min="0" step="0.1">
+        <span class="hint">0 = as medalhas que você já tem (já estão no dano medido).</span>
+      </label>
+    </div>
   </section>
 
   <section class="panel">
     <h2 class="panel-title">Seu time <span>· dano em k</span></h2>
     <div class="mons" id="mons"></div>
     <div class="row-actions" style="margin-top:12px">
+      <button type="button" id="boostPlus5">Simular +5 de boost em todos</button>
+      <button type="button" id="simReset">Limpar simulação de boost, nível e medalha</button>
       <button type="button" id="berryAll">Simular berry em todos</button>
       <button type="button" id="berryReal">Voltar berry como está no jogo</button>
       <button type="button" id="reset">Restaurar time padrão</button>
@@ -203,25 +230,33 @@ const RUNES = [
   {name:'Runa 4', bonus:'+8%',  color:'var(--r4)'},
   {name:'Runa 5', bonus:'+10%', color:'var(--r5)'},
 ];
+const MAX_BOOST = 85;
+// Medido no nível 473 (26/11/2026).
 const DEFAULT_TEAM = [
-  {name:'Tangrowth',        dmg:277, measuredWithBerry:false, useBerry:false},
-  {name:'Smeargle (grass)', dmg:301, measuredWithBerry:true,  useBerry:true},
-  {name:'Gogoat',           dmg:280, measuredWithBerry:false, useBerry:false},
-  {name:'Shiny Gogoat',     dmg:294, measuredWithBerry:true,  useBerry:true},
-  {name:'Meganium',         dmg:287, measuredWithBerry:false, useBerry:false},
-  {name:'Shiny Tangrowth',  dmg:299, measuredWithBerry:true,  useBerry:true},
-];
+  {name:'Tangrowth',        dmg:283, boost:23, measuredWithBerry:false, useBerry:false},
+  {name:'Smeargle (grass)', dmg:303, boost:26, measuredWithBerry:true,  useBerry:true},
+  {name:'Gogoat',           dmg:282, boost:22, measuredWithBerry:false, useBerry:false},
+  {name:'Shiny Gogoat',     dmg:296, boost:25, measuredWithBerry:true,  useBerry:true},
+  {name:'Meganium',         dmg:293, boost:23, measuredWithBerry:false, useBerry:false},
+  {name:'Shiny Tangrowth',  dmg:301, boost:25, measuredWithBerry:true,  useBerry:true},
+].map(m => ({...m, boostSim: m.boost}));
+const DEFAULT_LEVEL = 473;
 const DEFAULT_BERRY = +((298/287 - 1) * 100).toFixed(2); // 3.83
-const KEY = 'pka-hazard-calc-v1';
+const DEFAULT_BOOST_PCT = 0.5;  // Gardevoir 98.8k → 99.3k → 99.8k
+const KEY = 'pka-hazard-calc-v2';
 
 let state = load();
 
+function defaults(){
+  return {team: structuredClone(DEFAULT_TEAM), rune:0, precision:'', berryPct:DEFAULT_BERRY,
+    level:DEFAULT_LEVEL, levelSim:DEFAULT_LEVEL, levelPct:0, boostPct:DEFAULT_BOOST_PCT, medalPct:0};
+}
 function load(){
   try{
     const s = JSON.parse(localStorage.getItem(KEY));
-    if(s && Array.isArray(s.team) && s.team.length) return s;
+    if(s && Array.isArray(s.team) && s.team.length) return {...defaults(), ...s};
   }catch(e){}
-  return {team: structuredClone(DEFAULT_TEAM), rune:0, precision:'', berryPct:DEFAULT_BERRY};
+  return defaults();
 }
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){} }
 
@@ -231,8 +266,33 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':
 
 function berryF(){ return 1 + (Number(state.berryPct)||0)/100; }
 function baseDmg(m){ return (Number(m.dmg)||0) / (m.measuredWithBerry ? berryF() : 1); }
-function dmgOf(m, berry = m.useBerry){ return baseDmg(m) * (berry ? berryF() : 1); }
+const pct = v => (Number(v) || 0) / 100;
+const clampBoost = v => Math.max(0, Math.min(MAX_BOOST, Math.round(Number(v) || 0)));
+// Multiplicador de tudo que não é berry: nível e medalhas simulados.
+function charF(){ return (1 + pct(state.levelPct) * ((Number(state.levelSim)||0) - (Number(state.level)||0))) * (1 + pct(state.medalPct)); }
+// Ganho de +1 de boost, em k, para esse pokémon (relativo ao dano medido).
+function boostGain(m, berry = m.useBerry){ return baseDmg(m) * (berry ? berryF() : 1) * pct(state.boostPct) * charF(); }
+function dmgOf(m, berry = m.useBerry, boost = m.boostSim){
+  return baseDmg(m) * (berry ? berryF() : 1) * (1 + pct(state.boostPct) * (boost - m.boost)) * charF();
+}
+// Boosts para a dupla chegar a `target` de dano. Sobe sempre quem está com o boost
+// mais baixo (pedra mais barata); empate → quem ganha mais por +1. Limite +85.
+function boostsToReach(i, j, target){
+  const mons = [state.team[i], state.team[j]];
+  let missing = target - (dmgOf(mons[0]) + dmgOf(mons[1]));
+  const add = [0, 0];
+  while(missing > 1e-9){
+    const cand = [0, 1].filter(k => mons[k].boostSim + add[k] < MAX_BOOST && boostGain(mons[k]) > 0);
+    if(!cand.length) return null;
+    cand.sort((x, y) => (mons[x].boostSim + add[x]) - (mons[y].boostSim + add[y]) || boostGain(mons[y]) - boostGain(mons[x]));
+    const k = cand[0];
+    add[k]++; missing -= boostGain(mons[k]);
+  }
+  return {add};
+}
 
+// Dano exigido "efetivo": nunca menor que o do hazard anterior (corrige os erros da imagem).
+function need(h, r){ let v = 0; for(let k = 0; k <= h; k++) v = Math.max(v, NEED[k][r]); return v; }
 function precisionOk(h){
   if(state.precision === '' || state.precision == null) return true;
   return Number(state.precision) >= NEED[h][6];
@@ -240,7 +300,7 @@ function precisionOk(h){
 // Maior hazard que o dano alcança com a runa r (-1 = nenhum).
 function hazardFor(dmg, r){
   let best = -1;
-  for(let h = 0; h < NEED.length; h++) if(dmg >= NEED[h][r] && precisionOk(h)) best = h;
+  for(let h = 0; h < NEED.length; h++) if(dmg >= need(h, r) && precisionOk(h)) best = h;
   return best;
 }
 // Próximo hazard acima do atual e quanto falta.
@@ -248,7 +308,7 @@ function nextGoal(dmg, r){
   const cur = hazardFor(dmg, r);
   for(let h = cur + 1; h < NEED.length; h++){
     if(!precisionOk(h)) return {h, blocked:true, need: NEED[h][6]};
-    if(dmg < NEED[h][r]) return {h, missing: NEED[h][r] - dmg};
+    if(dmg < need(h, r)) return {h, missing: Math.max(0.1, need(h, r) - dmg)};
   }
   return null;
 }
@@ -293,6 +353,13 @@ function renderSettings(){
   $('rune').value = state.rune;
   $('precision').value = state.precision;
   $('berryPct').value = state.berryPct;
+  for(const k of ['level','levelSim','levelPct','boostPct','medalPct']) $(k).value = state[k];
+}
+const boostOpts = sel => Array.from({length: MAX_BOOST + 1}, (_, b) => `<option value="${b}" ${b===sel?'selected':''}>+${b}</option>`).join('');
+function monOutHTML(m){
+  const sim = dmgOf(m), diff = sim - m.dmg;
+  return `<span>Agora <b style="font-size:13px">${fmt(m.dmg)}</b> <span class="faint">(sem berry ${fmt(baseDmg(m))})</span></span>
+    <span>Simulado <b>${fmt(sim)}</b> ${Math.abs(diff) >= 0.05 ? `<span class="up">${diff>0?'+':''}${fmt(diff)}</span>` : ''} ${m.useBerry ? '<span class="tag-berry">berry</span>' : ''}</span>`;
 }
 
 function renderMons(){
@@ -300,14 +367,17 @@ function renderMons(){
     <div class="mon ${m.useBerry ? 'berry-on' : ''}" data-i="${i}">
       <div class="mon-row">
         <input type="text" data-f="name" value="${esc(m.name)}" aria-label="Nome do pokémon ${i+1}" placeholder="Nome">
-        <input type="number" data-f="dmg" value="${m.dmg}" min="0" step="1" aria-label="Dano de ${esc(m.name)} em k">
+        <input type="number" data-f="dmg" value="${m.dmg}" min="0" step="0.1" aria-label="Dano de ${esc(m.name)} em k">
+      </div>
+      <div class="mon-row boost">
+        <label>Boost agora<input type="number" data-f="boost" value="${m.boost}" min="0" max="${MAX_BOOST}" step="1"></label>
+        <label>Simular boost<select data-f="boostSim">${boostOpts(m.boostSim)}</select></label>
       </div>
       <div class="checks">
         <label title="Marque se o dano digitado já foi medido com a berry ativa"><input type="checkbox" data-f="measuredWithBerry" ${m.measuredWithBerry?'checked':''}> dano medido com berry</label>
         <label><input type="checkbox" data-f="useBerry" ${m.useBerry?'checked':''}> usar Brute Berry</label>
       </div>
-      <div class="mon-out"><span>Sem berry <b style="font-size:13px">${fmt(baseDmg(m))}</b></span>
-        <span>No cálculo <b>${fmt(dmgOf(m))}</b> ${m.useBerry ? '<span class="tag-berry">berry</span>' : ''}</span></div>
+      <div class="mon-out">${monOutHTML(m)}</div>
     </div>`).join('');
 }
 
@@ -327,8 +397,17 @@ function renderSummary(ps){
     <div class="card"><h3>Divisão em 3 duplas</h3>${split
       ? `<div class="big">${split.acc.map(p => hzLabel(p.hz[r])).join(' · ')}</div><div class="sub">${split.acc.map(p => esc(pairName(p))).join('<br>')}</div>`
       : `<div class="sub">Precisa de número par de pokémons.</div>`}</div>
-    <div class="card"><h3>Berries em uso</h3><div class="big">${state.team.filter(m=>m.useBerry).length}/${state.team.length}</div>
-      <div class="sub">Dano somado do time: ${fmt(totalTeam)}</div></div>`;
+    ${(() => {
+      // Melhor dupla com o dano medido no jogo, sem nenhuma simulação.
+      let now = null; const t = state.team;
+      for(let i = 0; i < t.length; i++) for(let j = i+1; j < t.length; j++){
+        const d = (Number(t[i].dmg)||0) + (Number(t[j].dmg)||0);
+        if(!now || d > now.d) now = {d, i, j};
+      }
+      const hNow = hazardFor(now.d, r), changed = Math.abs(top.dmg - now.d) >= 0.05;
+      return `<div class="card"><h3>Hoje × simulado</h3><div class="big">H${hzLabel(hNow)} → H${hzLabel(top.hz[r])}</div>
+        <div class="sub">${changed ? `Hoje ${fmt(now.d)} · simulado ${fmt(top.dmg)}` : 'Sem simulação: igual ao jogo'}<br>${state.team.filter(m=>m.useBerry).length}/${t.length} com berry · time ${fmt(totalTeam)}</div></div>`;
+    })()}`;
 }
 
 function renderTips(ps){
@@ -373,6 +452,36 @@ function renderTips(ps){
     }
   }
 
+  // Boost: quanto boost a melhor dupla precisa pros próximos hazards,
+  // e qual dupla chega no próximo com menos boost no total.
+  if(pct(state.boostPct) > 0){
+    const lines = [];
+    for(let h = curH + 1; h < NEED.length && lines.length < 3; h++){
+      if(!precisionOk(h)) break;
+      const nb = boostsToReach(top.i, top.j, need(h, r));
+      if(!nb){ lines.push(`Hazard ${h}: não chega nem com os dois no +${MAX_BOOST}`); break; }
+      const parts = [top.i, top.j].map((k, n) => nb.add[n] ? `${esc(state.team[k].name)} +${state.team[k].boostSim} → <b>+${state.team[k].boostSim + nb.add[n]}</b>` : '').filter(Boolean);
+      lines.push(`Hazard ${h}: ${parts.join(' e ')}`);
+    }
+    if(lines.length) tips.push({cls:'rune', html:`<b>Boost na melhor dupla</b> (${esc(pairName(top))}, ${RUNES[r].name}):<br>${lines.join('<br>')}`});
+
+    const target = curH + 1;
+    if(target < NEED.length && precisionOk(target)){
+      let cheap = null;
+      for(const p of ps){
+        const nb = boostsToReach(p.i, p.j, need(target, r));
+        if(!nb) continue;
+        const total = nb.add[0] + nb.add[1];
+        if(!cheap || total < cheap.total) cheap = {p, nb, total};
+      }
+      if(cheap && (cheap.p.i !== top.i || cheap.p.j !== top.j)){
+        tips.push({cls:'rune', html:`A dupla que chega no <b>Hazard ${target}</b> com menos boost é <b>${esc(pairName(cheap.p))}</b>: ${cheap.total} níveis de boost no total.`});
+      }
+    }
+    const perBoost = state.team.map(m => `${esc(m.name)} ${fmt(boostGain(m))}`).join(', ');
+    tips.push({cls:'', html:`Cada +1 de boost vale mais ou menos: ${perBoost}. Pedras de boost mais altas custam mais caro, então às vezes compensa boostar quem está mais baixo.`});
+  }
+
   // Precisão bloqueando.
   if(state.precision !== '' && state.precision != null){
     const unclamped = (() => { let b=-1; for(let h=0;h<NEED.length;h++) if(top.dmg >= NEED[h][r]) b=h; return b; })();
@@ -394,7 +503,7 @@ function renderPairs(ps){
     `<th class="num"><span class="rune-dot" style="background:${x.color}"></span>R${i}</th>`).join('')}</tr>`;
   const rows = ps.map((p, k) => {
     const h = p.hz[r];
-    const slack = h >= 0 ? p.dmg - NEED[h][r] : null;
+    const slack = h >= 0 ? p.dmg - need(h, r) : null;
     const ng = nextGoal(p.dmg, r);
     const info = `${slack != null ? `<span class="gain">+${fmt(slack)}</span>` : ''}${ng && !ng.blocked ? ` <span class="faint">/ −${fmt(ng.missing)} p/ H${ng.h}</span>` : ''}`;
     return `<tr class="${k===0?'best':''}"><td>${esc(pairName(p))}</td><td class="num">${fmt(p.dmg)}</td><td class="num">${info}</td>${
@@ -414,7 +523,7 @@ function renderRef(ps){
   const head = `<tr><th>Hazard</th>${RUNES.map(x => `<th class="num"><span class="rune-dot" style="background:${x.color}"></span>${x.name} (${x.bonus})</th>`).join('')}<th class="num">Precisão</th></tr>`;
   const rows = NEED.map((row, h) => `<tr><td><b>${h}</b></td>${row.slice(0,6).map((v, rr) => {
       const typo = h > 0 && v <= NEED[h-1][rr];
-      const hit = dmg >= v && precisionOk(h);
+      const hit = dmg >= need(h, rr) && precisionOk(h);
       return `<td class="num ${hit?'hit':''} ${rr===r?'cur-col':''} ${typo?'typo':''}" ${typo?'title="Parece erro na tabela original"':''}>${v}k</td>`;
     }).join('')}<td class="num ${precisionOk(h)?'':'faint'}">${row[6]}</td></tr>`).join('');
   $('ref').innerHTML = `<thead>${head}</thead><tbody>${rows}</tbody>`;
@@ -432,23 +541,44 @@ $('rune').addEventListener('change', e => { state.rune = +e.target.value; render
 $('precision').addEventListener('input', e => { state.precision = e.target.value; render(); });
 $('berryPct').addEventListener('input', e => { state.berryPct = e.target.value; render(true); });
 $('refPair').addEventListener('change', () => render());
+for(const k of ['level','levelSim','levelPct','boostPct','medalPct']){
+  $(k).addEventListener('input', e => {
+    const old = state[k];
+    state[k] = e.target.value;
+    // Mudou o nível atual e a simulação estava igual a ele: acompanha.
+    if(k === 'level' && String(state.levelSim) === String(old)){ state.levelSim = e.target.value; $('levelSim').value = e.target.value; }
+    render(true);
+  });
+}
 $('mons').addEventListener('input', e => {
   const card = e.target.closest('.mon'); if(!card) return;
   const m = state.team[+card.dataset.i], f = e.target.dataset.f;
   if(e.target.type === 'checkbox') m[f] = e.target.checked;
+  else if(f === 'boost'){
+    const old = m.boost;
+    m.boost = clampBoost(e.target.value);
+    if(m.boostSim === old || m.boostSim < m.boost) m.boostSim = m.boost;
+    card.querySelector('[data-f="boostSim"]').value = m.boostSim;
+  }
+  else if(f === 'boostSim') m.boostSim = clampBoost(e.target.value);
   else m[f] = f === 'dmg' ? Number(e.target.value) : e.target.value;
   // Texto/número: não re-renderiza os cards para não perder o foco; checkbox sim.
   if(e.target.type === 'checkbox') render(true);
   else { updateMonOut(card, m); render(); }
 });
 function updateMonOut(card, m){
-  card.querySelector('.mon-out').innerHTML = `<span>Sem berry <b style="font-size:13px">${fmt(baseDmg(m))}</b></span>
-    <span>No cálculo <b>${fmt(dmgOf(m))}</b> ${m.useBerry ? '<span class="tag-berry">berry</span>' : ''}</span>`;
+  card.querySelector('.mon-out').innerHTML = monOutHTML(m);
 }
+$('boostPlus5').addEventListener('click', () => { state.team.forEach(m => m.boostSim = clampBoost(m.boostSim + 5)); render(true); });
+$('simReset').addEventListener('click', () => {
+  state.team.forEach(m => m.boostSim = m.boost);
+  state.levelSim = state.level; state.medalPct = 0;
+  renderSettings(); render(true);
+});
 $('berryAll').addEventListener('click', () => { state.team.forEach(m => m.useBerry = true); render(true); });
 $('berryReal').addEventListener('click', () => { state.team.forEach(m => m.useBerry = m.measuredWithBerry); render(true); });
 $('reset').addEventListener('click', () => {
-  state = {team: structuredClone(DEFAULT_TEAM), rune: state.rune, precision: state.precision, berryPct: DEFAULT_BERRY};
+  state = {...state, team: structuredClone(DEFAULT_TEAM), berryPct: DEFAULT_BERRY, level: DEFAULT_LEVEL, levelSim: DEFAULT_LEVEL, medalPct: 0};
   renderSettings(); render(true);
 });
 
