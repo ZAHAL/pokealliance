@@ -121,6 +121,14 @@
   .duo-next{ font-size: 12.5px; color: var(--text-muted); line-height: 1.45; }
   .duo-next b{ color: var(--text); }
 
+  .team-bar{ display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px; background: var(--field); border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px; margin-bottom: 14px; }
+  .team-bar .hzteam{ font-family: var(--font-display); font-size: 40px; font-weight: 700; line-height: 1; color: var(--gold); }
+  .team-bar .hzteam small{ font-size: 16px; color: var(--text-muted); margin-right: 2px; }
+  .team-bar .lbl{ font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-faint); }
+  .team-bar .txt{ flex: 1 1 280px; min-width: 0; font-size: 13.5px; color: var(--text-muted); }
+  .team-bar .txt b{ color: var(--text); }
+  .duo.weak{ border-color: color-mix(in srgb, var(--gold) 60%, var(--border)); }
+  .duo.weak .duo-head h3::after{ content: " · limita o time"; color: var(--gold); text-transform: none; letter-spacing: 0; font-size: 12px; font-family: var(--font-body); }
   .row-actions{ display: flex; gap: 8px; flex-wrap: wrap; }
   button{ background: var(--field); color: var(--text-muted); border: 1px solid var(--border); border-radius: 8px; padding: 7px 12px; font: inherit; font-size: 13px; cursor: pointer; }
   button:hover{ color: var(--text); border-color: var(--accent); }
@@ -158,7 +166,7 @@
   <header>
     <p class="eyebrow">PokeAlliance · Hazard</p>
     <h1>Calculadora de dano para Hazard</h1>
-    <p class="lede">Monte suas 3 duplas arrastando os pokémons pelo ⠿ (ou use o botão ⇄ para trocar). Cada quadro mostra o dano da dupla, o hazard que ela aguenta com a sua runa e quanto falta pro próximo.</p>
+    <p class="lede">As 3 duplas precisam fazer o hazard, então o time vale o que a dupla mais fraca aguenta. Monte as duplas arrastando os pokémons pelo ⠿ (ou toque em ⇄) e veja quanto falta para o time inteiro subir.</p>
   </header>
 
   <section class="panel">
@@ -205,10 +213,10 @@
       <h2 class="panel-title">Suas duplas <span>· dano em k</span></h2>
       <span class="hint" id="swapHint">Arraste pelo ⠿ ou toque em ⇄ em dois pokémons para trocar.</span>
     </div>
+    <div class="team-bar" id="teamBar"></div>
     <div class="duos" id="duos"></div>
     <div class="row-actions" style="margin-top:14px">
-      <button type="button" id="autoBalance">Equilibrar as 3 duplas</button>
-      <button type="button" id="autoStrong">Dupla mais forte primeiro</button>
+      <button type="button" id="autoBalance" class="primary">Equilibrar as 3 duplas</button>
       <button type="button" id="boostPlus5">Simular +5 de boost em todos</button>
       <button type="button" id="berryAll">Simular berry em todos</button>
       <button type="button" id="simReset">Limpar simulações</button>
@@ -278,7 +286,7 @@ const DEFAULT_TEAM = [
 const DEFAULT_LEVEL = 473;
 const DEFAULT_BERRY = +((298/287 - 1) * 100).toFixed(2); // 3.83
 const DEFAULT_BOOST_PCT = 0.5;
-const KEY = 'pka-hazard-calc-v3';
+const KEY = 'pka-hazard-calc-v4';
 
 function defaults(){
   return {team: structuredClone(DEFAULT_TEAM), rune:0, precision:'', berryPct:DEFAULT_BERRY,
@@ -353,12 +361,15 @@ function duoInfo(d, team = state.team){
 }
 const duoName = info => `${state.team[info.i].name} + ${state.team[info.j].name}`;
 const hzLabel = h => h < 0 ? '—' : h;
-// Nota de uma formação: soma dos hazards, depois o menor, depois o menor dano.
+// Todas as duplas precisam fazer o hazard, então o time vale o hazard da dupla mais fraca.
+// Nota de uma formação: hazard do time, depois o dano da dupla mais fraca (mais perto
+// do próximo), depois a soma dos hazards.
 function scoreOf(team){
   const r = state.rune, ds = [0,1,2].map(d => duoInfo(d, team));
   const hs = ds.map(x => x.hz[r]);
-  return [hs.reduce((a,b)=>a+b,0), Math.min(...hs), Math.min(...ds.map(x => x.dmg))];
+  return [Math.min(...hs), Math.min(...ds.map(x => x.dmg)), hs.reduce((a,b)=>a+b,0)];
 }
+const teamHz = (r = state.rune) => Math.min(...[0,1,2].map(d => duoInfo(d).hz[r]));
 const better = (a, b) => { for(let k = 0; k < a.length; k++){ if(a[k] > b[k] + 1e-9) return true; if(a[k] < b[k] - 1e-9) return false; } return false; };
 function allSplits(){
   const out = [];
@@ -379,19 +390,6 @@ function autoBalance(){
     if(!best || better(s, best.s)) best = {o, s};
   }
   applyOrder(best.o); sortDuos();
-}
-function autoStrong(){
-  const left = [0,1,2,3,4,5], order = [];
-  while(left.length){
-    let best = null;
-    for(let a = 0; a < left.length; a++) for(let b = a+1; b < left.length; b++){
-      const d = dmgOf(state.team[left[a]]) + dmgOf(state.team[left[b]]);
-      if(!best || d > best.d) best = {a: left[a], b: left[b], d};
-    }
-    order.push(best.a, best.b);
-    left.splice(left.indexOf(best.a), 1); left.splice(left.indexOf(best.b), 1);
-  }
-  applyOrder(order);
 }
 // Coloca as duplas da mais forte pra mais fraca, mantendo os pares.
 function sortDuos(){
@@ -471,7 +469,8 @@ function duoNextHTML(info){
 function duoHTML(d){
   const info = duoInfo(d), r = state.rune, [i, j] = duoIdx(d);
   const diff = info.dmg - info.now;
-  return `<div class="duo" data-d="${d}">
+  const weak = info.hz[r] === teamHz() && new Set([0,1,2].map(x => duoInfo(x).hz[r])).size > 1;
+  return `<div class="duo ${weak ? 'weak' : ''}" data-d="${d}">
     <div class="duo-head"><h3>Dupla ${d+1}</h3><span class="faint" style="font-size:12px">${RUNES[r].name}</span></div>
     ${monHTML(state.team[i], i)}
     ${monHTML(state.team[j], j)}
@@ -488,7 +487,41 @@ function duoHTML(d){
     </div>
   </div>`;
 }
+// O que falta pro time todo subir um hazard: runa mínima e boosts nas duplas que não chegam.
+function teamPlan(){
+  const r = state.rune, th = teamHz(r), target = th + 1;
+  if(target >= NEED.length) return {th, done:true};
+  if(!precisionOk(target)) return {th, target, prec: NEED[target][6]};
+  const ds = [0,1,2].map(d => duoInfo(d));
+  const rune = RUNES.findIndex((_, rr) => rr > r && Math.min(...ds.map(x => x.hz[rr])) >= target);
+  const boosts = []; let total = 0, possible = true;
+  if(pct(state.boostPct) > 0){
+    for(const x of ds){
+      if(x.hz[r] >= target) continue;
+      const nb = boostsToReach(x.i, x.j, need(target, r));
+      if(!nb){ possible = false; continue; }
+      total += nb.add[0] + nb.add[1];
+      boosts.push({d: x.d, parts: [x.i, x.j].map((k, n) => nb.add[n] ? `${esc(state.team[k].name.split(' (')[0])} +${state.team[k].boostSim + nb.add[n]}` : '').filter(Boolean)});
+    }
+  }
+  return {th, target, rune, boosts, total, possible, short: ds.filter(x => x.hz[r] < target).map(x => ({d:x.d, miss: need(target, r) - x.dmg}))};
+}
+function renderTeamBar(){
+  const p = teamPlan(), r = state.rune;
+  let txt;
+  if(p.done) txt = 'O time já passa do Hazard 17.';
+  else if(p.prec != null) txt = `O Hazard ${p.target} pede precisão <b>${p.prec}</b>.`;
+  else {
+    const parts = [`Para o time fazer o <b>H${p.target}</b>: ${p.short.map(x => `Dupla ${x.d+1} precisa de +${fmt(x.miss)}`).join(', ')}.`];
+    if(p.rune > 0) parts.push(`Com a <b>${RUNES[p.rune].name}</b> todas chegam.`);
+    if(p.boosts.length && p.possible) parts.push(`Só com boost: ${p.boosts.map(b => `Dupla ${b.d+1} (${b.parts.join(', ')})`).join('; ')}, <b>${p.total}</b> boosts no total.`);
+    txt = parts.join(' ');
+  }
+  $('teamBar').innerHTML = `<div><div class="lbl">Time faz</div><div class="hzteam"><small>H</small>${hzLabel(p.th)}</div></div>
+    <div class="txt">${txt}</div>`;
+}
 function renderDuos(){
+  renderTeamBar();
   $('duos').innerHTML = [0,1,2].map(duoHTML).join('');
   $('swapHint').textContent = picked === null
     ? 'Arraste pelo ⠿ ou toque em ⇄ em dois pokémons para trocar.'
@@ -509,16 +542,24 @@ function renderTips(){
     if(better(s, cur) && (!bestSwap || better(s, bestSwap.s))) bestSwap = {a, b, s};
   }
   if(bestSwap){
-    tips.push({cls:'good', html:`Trocar <b>${esc(state.team[bestSwap.a].name)}</b> com <b>${esc(state.team[bestSwap.b].name)}</b> deixa as duplas em H${(() => { const t=[...state.team]; [t[bestSwap.a],t[bestSwap.b]]=[t[bestSwap.b],t[bestSwap.a]]; return [0,1,2].map(d=>hzLabel(duoInfo(d,t).hz[r])).join(' · H'); })()} (hoje H${ds.map(x=>hzLabel(x.hz[r])).join(' · H')}).<button type="button" data-swap="${bestSwap.a}-${bestSwap.b}">Trocar</button>`});
+    const t = [...state.team]; [t[bestSwap.a], t[bestSwap.b]] = [t[bestSwap.b], t[bestSwap.a]];
+    const after = [0,1,2].map(d => duoInfo(d, t)), newTeam = Math.min(...after.map(x => x.hz[r])), oldTeam = cur[0];
+    const who = `Trocar <b>${esc(state.team[bestSwap.a].name)}</b> com <b>${esc(state.team[bestSwap.b].name)}</b>`;
+    const btn = `<button type="button" data-swap="${bestSwap.a}-${bestSwap.b}">Trocar</button>`;
+    tips.push({cls:'good', html: newTeam > oldTeam
+      ? `${who} sobe o time de H${hzLabel(oldTeam)} para <b>H${hzLabel(newTeam)}</b> (duplas em H${after.map(x => hzLabel(x.hz[r])).join(' · H')}).${btn}`
+      : `${who} deixa as duplas mais equilibradas: o time continua em H${hzLabel(oldTeam)}, mas a dupla mais fraca vai de ${fmt(cur[1])} para <b>${fmt(bestSwap.s[1])}</b>, mais perto do H${oldTeam + 1}.${btn}`});
   }
 
   // Berry: em qual dupla colocar berry em quem não tem sobe o hazard.
+  const th = Math.min(...ds.map(x => x.hz[r])), weakCount = ds.filter(x => x.hz[r] === th).length;
   for(const info of ds){
+    if(info.hz[r] !== th) continue; // berry só importa nas duplas que limitam o time
     const missing = [info.i, info.j].filter(k => !state.team[k].useBerry);
     if(!missing.length) continue;
     const withB = [info.i, info.j].reduce((s, k) => s + dmgOf(state.team[k], true), 0);
     const hB = hazardFor(withB, r);
-    if(hB > info.hz[r]) tips.push({cls:'berry', html:`Berry em <b>${esc(missing.map(k => state.team[k].name).join(' e '))}</b> leva a Dupla ${info.d+1} de H${hzLabel(info.hz[r])} para <b>H${hB}</b> (${fmt(withB)}).`});
+    if(hB > info.hz[r]) tips.push({cls:'berry', html:`Berry em <b>${esc(missing.map(k => state.team[k].name).join(' e '))}</b> leva a Dupla ${info.d+1} de H${hzLabel(info.hz[r])} para <b>H${hB}</b> (${fmt(withB)}).${weakCount > 1 ? ' O time só sobe quando as outras duplas mais fracas também chegarem.' : ' Isso sobe o time.'}`});
   }
   // Berry sobrando: dupla que faz o mesmo hazard sem berry.
   for(const info of ds){
@@ -528,7 +569,7 @@ function renderTips(){
     if(hazardFor(noB, r) === info.hz[r] && info.hz[r] >= 0) tips.push({cls:'berry', html:`A Dupla ${info.d+1} faz H${info.hz[r]} mesmo <b>sem berry</b> (${fmt(noB)}). Dá pra guardar a berry.`});
   }
   if(!tips.some(t => t.cls === 'berry') && state.team.some(m => !m.useBerry))
-    tips.push({cls:'berry', html:`Pôr berry em quem ainda não tem não sobe o hazard de nenhuma dupla com a ${RUNES[r].name}.`});
+    tips.push({cls:'berry', html:`Pôr berry em quem ainda não tem não sobe nenhuma das duplas que limitam o time com a ${RUNES[r].name}.`});
 
   // Precisão.
   const topH = Math.max(...ds.map(x => x.hz[r]));
@@ -565,12 +606,13 @@ function refreshNumbers(){
     const d = +el.dataset.d, tmp = document.createElement('div');
     tmp.innerHTML = duoHTML(d);
     el.querySelector('.duo-foot').replaceWith(tmp.querySelector('.duo-foot'));
+    el.className = tmp.firstElementChild.className;
     el.querySelectorAll('.mon').forEach(mEl => {
       const m = state.team[+mEl.dataset.i];
       mEl.querySelector('.mon-out').innerHTML = monOutHTML(m);
     });
   });
-  renderTips(); renderRef(); save();
+  renderTeamBar(); renderTips(); renderRef(); save();
 }
 
 // ---------- Eventos ----------
@@ -666,7 +708,6 @@ duosEl.addEventListener('touchend', e => {
 });
 
 $('autoBalance').addEventListener('click', () => { autoBalance(); picked = null; render(); });
-$('autoStrong').addEventListener('click', () => { autoStrong(); picked = null; render(); });
 $('boostPlus5').addEventListener('click', () => { state.team.forEach(m => m.boostSim = clampBoost(m.boostSim + 5)); render(); });
 $('berryAll').addEventListener('click', () => { state.team.forEach(m => m.useBerry = true); render(); });
 $('simReset').addEventListener('click', () => {
@@ -676,9 +717,12 @@ $('simReset').addEventListener('click', () => {
 });
 $('reset').addEventListener('click', () => {
   state = {...state, team: structuredClone(DEFAULT_TEAM), berryPct: DEFAULT_BERRY, level: DEFAULT_LEVEL, levelSim: DEFAULT_LEVEL, medalPct: 0};
-  picked = null; renderSettings(); render();
+  autoBalance(); picked = null; renderSettings(); render();
 });
 
+let hasSaved = false;
+try{ hasSaved = !!localStorage.getItem(KEY); }catch(e){}
+if(!hasSaved) autoBalance();
 renderSettings();
 render();
 </script>
