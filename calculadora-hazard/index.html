@@ -184,6 +184,13 @@
       <label class="field">Nível para simular
         <input type="number" id="levelSim" min="1" step="1">
       </label>
+      <label class="field">Medalhas agora (%)
+        <input type="number" id="medalNow" min="0" step="0.2">
+      </label>
+      <label class="field">Medalhas para simular (%)
+        <input type="number" id="medalSim" min="0" step="0.2">
+        <span class="hint">Cada medalha dá +0,2%.</span>
+      </label>
     </div>
     <details class="more" id="moreSettings">
       <summary>Ajustes de cálculo (berry, boost, nível, medalhas)</summary>
@@ -200,9 +207,9 @@
           <input type="number" id="levelPct" min="0" step="0.01">
           <span class="hint">Ainda sem medição: 0.</span>
         </label>
-        <label class="field">Bônus extra de medalhas (%)
-          <input type="number" id="medalPct" min="0" step="0.1">
-          <span class="hint">0 = as medalhas que você já tem.</span>
+        <label class="field">Dano por 1% de medalha (%)
+          <input type="number" id="medalEff" min="0" step="0.01">
+          <span class="hint">0,81%: Tangrowth 280.004 → 283.179 com 1,4%.</span>
         </label>
       </div>
     </details>
@@ -280,17 +287,20 @@ const DEFAULT_TEAM = [
   {name:'Shiny Tangrowth',  dmg:301, boost:25, measuredWithBerry:true,  useBerry:true},
   {name:'Shiny Gogoat',     dmg:296, boost:25, measuredWithBerry:true,  useBerry:true},
   {name:'Meganium',         dmg:293, boost:23, measuredWithBerry:false, useBerry:false},
-  {name:'Tangrowth',        dmg:283, boost:23, measuredWithBerry:false, useBerry:false},
+  {name:'Tangrowth',        dmg:283.2, boost:23, measuredWithBerry:false, useBerry:false},
   {name:'Gogoat',           dmg:282, boost:22, measuredWithBerry:false, useBerry:false},
 ].map(m => ({...m, boostSim: m.boost}));
 const DEFAULT_LEVEL = 473;
 const DEFAULT_BERRY = +((298/287 - 1) * 100).toFixed(2); // 3.83
 const DEFAULT_BOOST_PCT = 0.5;
+const DEFAULT_MEDAL = 1.4;     // 7 medalhas × 0,2%
+// Tangrowth: 280.004 sem medalhas, 283.179 com 1,4% → cada 1% de medalha dá ~0,81% de dano.
+const DEFAULT_MEDAL_EFF = +((283179/280004 - 1) / 1.4 * 100).toFixed(3);
 const KEY = 'pka-hazard-calc-v4';
 
 function defaults(){
   return {team: structuredClone(DEFAULT_TEAM), rune:0, precision:'', berryPct:DEFAULT_BERRY,
-    level:DEFAULT_LEVEL, levelSim:DEFAULT_LEVEL, levelPct:0, boostPct:DEFAULT_BOOST_PCT, medalPct:0, refDuo:0};
+    level:DEFAULT_LEVEL, levelSim:DEFAULT_LEVEL, levelPct:0, boostPct:DEFAULT_BOOST_PCT, medalNow:DEFAULT_MEDAL, medalSim:DEFAULT_MEDAL, medalEff:DEFAULT_MEDAL_EFF, refDuo:0};
 }
 function load(){
   try{
@@ -312,7 +322,12 @@ const clampBoost = v => Math.max(0, Math.min(MAX_BOOST, Math.round(Number(v) || 
 // ---------- Modelo de dano ----------
 function berryF(){ return 1 + pct(state.berryPct); }
 function baseDmg(m){ return (Number(m.dmg)||0) / (m.measuredWithBerry ? berryF() : 1); }
-function charF(){ return (1 + pct(state.levelPct) * ((Number(state.levelSim)||0) - (Number(state.level)||0))) * (1 + pct(state.medalPct)); }
+// Nível e medalhas simulados, relativos ao que já está no dano medido.
+function medalF(m){ return 1 + pct(state.medalEff) * (Number(m) || 0); }
+function charF(){
+  return (1 + pct(state.levelPct) * ((Number(state.levelSim)||0) - (Number(state.level)||0)))
+    * medalF(state.medalSim) / medalF(state.medalNow);
+}
 function boostGain(m, berry = m.useBerry){ return baseDmg(m) * (berry ? berryF() : 1) * pct(state.boostPct) * charF(); }
 function dmgOf(m, berry = m.useBerry, boost = m.boostSim){
   return baseDmg(m) * (berry ? berryF() : 1) * (1 + pct(state.boostPct) * (boost - m.boost)) * charF();
@@ -405,7 +420,7 @@ function swap(a, b){
 function renderSettings(){
   $('rune').innerHTML = RUNES.map((r, i) => `<option value="${i}">${r.name} (${r.bonus})</option>`).join('');
   $('rune').value = state.rune;
-  for(const k of ['precision','level','levelSim','berryPct','levelPct','boostPct','medalPct']) $(k).value = state[k];
+  for(const k of ['precision','level','levelSim','berryPct','levelPct','boostPct','medalNow','medalSim','medalEff']) $(k).value = state[k];
 }
 const boostOpts = sel => Array.from({length: MAX_BOOST + 1}, (_, b) => `<option value="${b}" ${b===sel?'selected':''}>+${b}</option>`).join('');
 function monOutHTML(m){
@@ -514,6 +529,13 @@ function renderTeamBar(){
   else {
     const parts = [`Para o time fazer o <b>H${p.target}</b>: ${p.short.map(x => `Dupla ${x.d+1} precisa de +${fmt(x.miss)}`).join(', ')}.`];
     if(p.rune > 0) parts.push(`Com a <b>${RUNES[p.rune].name}</b> todas chegam.`);
+    if(pct(state.medalEff) > 0){
+      const ratio = Math.max(...p.short.map(x => need(p.target, r) / duoInfo(x.d).dmg));
+      const x = (ratio * medalF(state.medalSim) - 1) / pct(state.medalEff);
+      const medal = Math.ceil(x / 0.2 - 1e-9) * 0.2;
+      const extra = Math.round((medal - (Number(state.medalSim)||0)) / 0.2);
+      if(extra > 0) parts.push(`Só com medalhas: <b>${medal.toLocaleString('pt-BR', {maximumFractionDigits:1})}%</b> (+${extra} medalha${extra>1?'s':''}).`);
+    }
     if(p.boosts.length && p.possible) parts.push(`Só com boost: ${p.boosts.map(b => `Dupla ${b.d+1} (${b.parts.join(', ')})`).join('; ')}, <b>${p.total}</b> boosts no total.`);
     txt = parts.join(' ');
   }
@@ -617,11 +639,12 @@ function refreshNumbers(){
 
 // ---------- Eventos ----------
 $('rune').addEventListener('change', e => { state.rune = +e.target.value; render(); });
-for(const k of ['precision','level','levelSim','berryPct','levelPct','boostPct','medalPct']){
+for(const k of ['precision','level','levelSim','berryPct','levelPct','boostPct','medalNow','medalSim','medalEff']){
   $(k).addEventListener('input', e => {
     const old = state[k];
     state[k] = e.target.value;
     if(k === 'level' && String(state.levelSim) === String(old)){ state.levelSim = e.target.value; $('levelSim').value = e.target.value; }
+    if(k === 'medalNow' && String(state.medalSim) === String(old)){ state.medalSim = e.target.value; $('medalSim').value = e.target.value; }
     render();
   });
 }
@@ -712,11 +735,11 @@ $('boostPlus5').addEventListener('click', () => { state.team.forEach(m => m.boos
 $('berryAll').addEventListener('click', () => { state.team.forEach(m => m.useBerry = true); render(); });
 $('simReset').addEventListener('click', () => {
   state.team.forEach(m => { m.boostSim = m.boost; m.useBerry = m.measuredWithBerry; });
-  state.levelSim = state.level; state.medalPct = 0;
+  state.levelSim = state.level; state.medalSim = state.medalNow;
   renderSettings(); render();
 });
 $('reset').addEventListener('click', () => {
-  state = {...state, team: structuredClone(DEFAULT_TEAM), berryPct: DEFAULT_BERRY, level: DEFAULT_LEVEL, levelSim: DEFAULT_LEVEL, medalPct: 0};
+  state = {...state, team: structuredClone(DEFAULT_TEAM), berryPct: DEFAULT_BERRY, level: DEFAULT_LEVEL, levelSim: DEFAULT_LEVEL, medalNow: DEFAULT_MEDAL, medalSim: DEFAULT_MEDAL, medalEff: DEFAULT_MEDAL_EFF};
   autoBalance(); picked = null; renderSettings(); render();
 });
 
