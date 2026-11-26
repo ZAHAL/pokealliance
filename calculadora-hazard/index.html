@@ -493,7 +493,8 @@ function duoHTML(d){
       <div class="duo-score">
         <div><div class="lbl">Dano total</div><div class="dmg">${fmt(info.dmg)}</div>
           ${Math.abs(diff) >= 0.05 ? `<div class="delta">jogo ${fmt(info.now)} <span class="up">${diff>0?'+':''}${fmt(diff)}</span></div>` : ''}</div>
-        <div><div class="lbl" style="text-align:right">Aguenta</div><div class="hzbig"><small>H</small>${hzLabel(info.hz[r])}</div></div>
+        <div><div class="lbl" style="text-align:right">Aguenta</div><div class="hzbig"><small>H</small>${hzLabel(info.hz[r])}</div>
+          ${info.hz[r] >= 0 ? `<div class="delta" style="text-align:right" title="Dano exigido pela tabela na ${RUNES[r].name}">exige ${fmt(need(info.hz[r], r))}</div>` : ''}</div>
       </div>
       ${ladderHTML(info)}
       <div class="runes" aria-label="Hazard por runa">${info.hz.map((h, rr) =>
