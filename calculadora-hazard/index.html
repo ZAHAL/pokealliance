@@ -6,11 +6,13 @@
 <title>Calculadora de Hazard</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap">
 <style>
+  /* Layout: configuração no topo, 3 quadros de dupla lado a lado (empilham no celular), dicas e tabela recolhível embaixo. */
   :root{
     color-scheme: dark;
     --bg: #0e111a;
     --surface: #191d29;
     --field: #1c2231;
+    --field-2: #222a3b;
     --border: #2a3145;
     --border-soft: #232939;
     --text: #eef1f8;
@@ -23,6 +25,7 @@
     --good-soft: #4caf6b22;
     --bad: #e0654a;
     --berry: #c75bd6;
+    --on-accent: #0e111a;
     --r0: #b9c0d4; --r1: #3fcf8e; --r2: #4a9be0; --r3: #a06cf0; --r4: #f0a53c; --r5: #f0506e;
     --radius: 14px;
     --font-display: 'Rajdhani', 'Trebuchet MS', sans-serif;
@@ -40,7 +43,7 @@
     font-family: var(--font-body);
     line-height: 1.5;
   }
-  .page{ max-width: 1040px; margin: 0 auto; padding-block: 40px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; gap: 24px; }
+  .page{ max-width: 1120px; margin: 0 auto; padding-block: 40px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; gap: 24px; }
   .eyebrow{ margin: 0; font-family: var(--font-mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
   h1{ margin: 4px 0 6px; font-family: var(--font-display); font-weight: 700; font-size: clamp(28px, 5vw, 40px); text-wrap: balance; }
   .lede{ margin: 0; max-width: 66ch; color: var(--text-muted); font-size: 15px; }
@@ -48,73 +51,106 @@
   .panel{ background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; }
   .panel-title{ margin: 0 0 14px; font-family: var(--font-display); font-weight: 600; font-size: 15px; letter-spacing: .03em; text-transform: uppercase; color: var(--text-muted); }
   .panel-title span{ color: var(--accent); }
+  .panel-head{ display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px 16px; margin-bottom: 14px; }
+  .panel-head .panel-title{ margin: 0; }
 
-  .settings{ display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+  .settings{ display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; }
   label.field{ display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--text-muted); }
   .hint{ font-size: 12px; color: var(--text-faint); }
   input[type="text"], input[type="number"], select{
     background: var(--field); color: var(--text); border: 1px solid var(--border);
-    border-radius: 8px; padding: 8px 10px; font: inherit; font-size: 14px; width: 100%;
+    border-radius: 8px; padding: 8px 10px; font: inherit; font-size: 14px; width: 100%; min-width: 0;
   }
   input[type="number"]{ font-family: var(--font-mono); }
-  input:focus, select:focus{ outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  input:focus, select:focus, button:focus-visible, summary:focus-visible{ outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
   input::placeholder{ color: var(--text-faint); }
+  details.more{ margin-top: 14px; }
+  details.more > summary{ cursor: pointer; font-size: 13px; color: var(--text-muted); border-radius: 6px; width: fit-content; }
+  details.more[open] > summary{ margin-bottom: 12px; }
 
-  .mons{ display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 12px; }
-  .mon{ background: var(--field); border: 1px solid var(--border-soft); border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+  /* Duplas */
+  .duos{ display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+  @media (max-width: 920px){ .duos{ grid-template-columns: 1fr; } }
+  .duo{ background: var(--field); border: 1px solid var(--border-soft); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .duo-head{ display: flex; justify-content: space-between; align-items: baseline; }
+  .duo-head h3{ margin: 0; font-family: var(--font-display); font-size: 15px; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); }
+
+  .mon{ background: var(--field-2); border: 1px solid var(--border); border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 8px; transition: border-color .15s, opacity .15s, transform .15s; }
   .mon.berry-on{ border-color: color-mix(in srgb, var(--berry) 55%, var(--border)); }
-  .mon-row{ display: grid; grid-template-columns: 1fr 110px; gap: 8px; }
-  .mon-row.boost{ grid-template-columns: 1fr 1fr; }
-  .mon-row.boost label{ display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--text-faint); }
-  .sub-title{ margin: 18px 0 12px; font-family: var(--font-display); font-weight: 600; font-size: 13px; letter-spacing: .04em; text-transform: uppercase; color: var(--text-faint); }
-  .up{ color: var(--good); font-family: var(--font-mono); font-size: 12px; }
-  .checks{ display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--text-muted); }
-  .checks label{ display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
-  .checks input{ accent-color: var(--berry); width: 16px; height: 16px; }
-  .mon-out{ display: flex; justify-content: space-between; align-items: baseline; font-size: 13px; color: var(--text-muted); }
-  .mon-out b{ font-family: var(--font-mono); font-size: 16px; color: var(--text); }
+  .mon.dragging{ opacity: .4; }
+  .mon.drop-target{ border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .mon.picked{ border-color: var(--gold); box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold) 25%, transparent); }
+  .mon-top{ display: grid; grid-template-columns: auto minmax(0,1fr) 84px auto; gap: 6px; align-items: center; }
+  .handle{ cursor: grab; color: var(--text-faint); font-size: 18px; line-height: 1; padding: 4px 2px; user-select: none; touch-action: none; }
+  .handle:active{ cursor: grabbing; }
+  .swap{ padding: 6px 8px; font-size: 12px; }
+  .mon.picked .swap{ background: var(--gold); color: var(--on-accent); border-color: var(--gold); }
+  .mon-row{ display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .mon-row label{ display: flex; flex-direction: column; gap: 3px; font-size: 11px; color: var(--text-faint); }
+  .mon-row input, .mon-row select, .mon-top input{ padding: 6px 8px; font-size: 13px; }
+  .checks{ display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: var(--text-muted); }
+  .checks label{ display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
+  .checks input{ accent-color: var(--berry); width: 15px; height: 15px; margin: 0; }
+  .mon-out{ display: flex; justify-content: space-between; align-items: baseline; gap: 6px; font-size: 12px; color: var(--text-muted); flex-wrap: wrap; }
+  .mon-out b{ font-family: var(--font-mono); font-size: 15px; color: var(--text); }
   .tag-berry{ font-family: var(--font-mono); font-size: 11px; color: var(--berry); }
+  .up{ color: var(--good); font-family: var(--font-mono); font-size: 12px; }
 
-  .cards{ display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
-  .card{ background: var(--field); border: 1px solid var(--border-soft); border-radius: 10px; padding: 14px; }
-  .card h3{ margin: 0 0 4px; font-family: var(--font-display); font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); font-weight: 600; }
-  .card .big{ font-family: var(--font-display); font-size: 30px; font-weight: 700; line-height: 1.1; }
-  .card .sub{ font-size: 13px; color: var(--text-muted); }
+  .duo-foot{ border-top: 1px solid var(--border); padding-top: 10px; display: flex; flex-direction: column; gap: 10px; }
+  .duo-score{ display: flex; justify-content: space-between; align-items: flex-end; gap: 10px; }
+  .duo-score .lbl{ font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-faint); }
+  .duo-score .dmg{ font-family: var(--font-mono); font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .duo-score .hzbig{ font-family: var(--font-display); font-size: 34px; font-weight: 700; line-height: 1; color: var(--accent); text-align: right; }
+  .duo-score .hzbig small{ font-size: 14px; color: var(--text-muted); margin-right: 2px; }
+  .delta{ font-size: 12px; color: var(--text-muted); }
+
+  /* Régua de hazards */
+  .ladder{ position: relative; height: 46px; margin: 2px 6px 0; }
+  .ladder .track{ position: absolute; left: 0; right: 0; top: 10px; height: 10px; border-radius: 5px; background: var(--bg); overflow: hidden; }
+  .ladder .fill{ position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 45%, transparent), var(--accent)); border-radius: 5px; }
+  .ladder .now{ position: absolute; top: 6px; width: 2px; height: 18px; background: var(--text-faint); transform: translateX(-1px); }
+  .ladder .tick{ position: absolute; top: 8px; width: 1px; height: 14px; background: var(--border); transform: translateX(-.5px); }
+  .ladder .tick.hit{ background: color-mix(in srgb, var(--on-accent) 70%, transparent); }
+  .ladder .tl{ position: absolute; top: 25px; transform: translateX(-50%); font-family: var(--font-mono); font-size: 10px; color: var(--text-faint); white-space: nowrap; }
+  .ladder .tl.hit{ color: var(--accent); }
+  .ladder .tl.next{ color: var(--gold); font-weight: 600; }
+  .runes{ display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; }
+  .runes span{ text-align: center; font-family: var(--font-mono); font-size: 12px; padding: 3px 0; border-radius: 6px; background: var(--bg); color: var(--text-muted); border-top: 2px solid var(--rc); }
+  .runes span.cur{ background: var(--accent); color: var(--on-accent); font-weight: 600; }
+  .runes span i{ display: block; font-style: normal; font-size: 9px; opacity: .75; }
+  .duo-next{ font-size: 12.5px; color: var(--text-muted); line-height: 1.45; }
+  .duo-next b{ color: var(--text); }
+
+  .row-actions{ display: flex; gap: 8px; flex-wrap: wrap; }
+  button{ background: var(--field); color: var(--text-muted); border: 1px solid var(--border); border-radius: 8px; padding: 7px 12px; font: inherit; font-size: 13px; cursor: pointer; }
+  button:hover{ color: var(--text); border-color: var(--accent); }
+  button.primary{ background: var(--accent); color: var(--on-accent); border-color: var(--accent); font-weight: 600; }
 
   .tip-list{ margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
   .tip-list li{ background: var(--field); border-left: 3px solid var(--accent); border-radius: 6px; padding: 10px 12px; font-size: 14px; }
   .tip-list li.berry{ border-left-color: var(--berry); }
   .tip-list li.rune{ border-left-color: var(--gold); }
   .tip-list li.warn{ border-left-color: var(--bad); }
+  .tip-list li.good{ border-left-color: var(--good); }
   .tip-list b{ color: var(--text); }
+  .tip-list button{ margin-left: 6px; padding: 3px 10px; font-size: 12px; }
 
   .table-wrap{ overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  table{ border-collapse: collapse; width: 100%; font-size: 14px; }
-  th, td{ padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border-soft); white-space: nowrap; }
+  table{ border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td{ padding: 6px 8px; text-align: right; border-bottom: 1px solid var(--border-soft); white-space: nowrap; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
   th{ font-family: var(--font-display); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; font-size: 12px; color: var(--text-muted); }
-  td.num, th.num{ text-align: right; font-family: var(--font-mono); }
-  tr.best td{ background: var(--good-soft); }
-  .hz{ display: inline-block; min-width: 34px; text-align: center; font-family: var(--font-mono); font-weight: 600; padding: 2px 6px; border-radius: 6px; background: #ffffff0d; }
-  .hz.cur{ background: var(--accent); color: #0e111a; }
-  .hz.none{ color: var(--text-faint); }
-  .rune-dot{ display: inline-block; width: 9px; height: 9px; border-radius: 2px; transform: rotate(45deg); margin-right: 6px; vertical-align: 1px; }
-  .muted{ color: var(--text-muted); }
-  .faint{ color: var(--text-faint); }
-  .gain{ color: var(--good); font-family: var(--font-mono); }
-
+  th:first-child, td:first-child{ text-align: left; }
+  .rune-dot{ display: inline-block; width: 8px; height: 8px; border-radius: 2px; transform: rotate(45deg); margin-right: 6px; vertical-align: 1px; }
   .ref td.hit{ background: var(--good-soft); color: var(--good); }
   .ref td.cur-col{ outline: 1px solid var(--accent); outline-offset: -1px; }
   .ref td.typo{ text-decoration: underline dotted var(--bad); text-underline-offset: 3px; }
-  .pair-pick{ max-width: 340px; }
-  .foot{ font-size: 13px; color: var(--text-faint); }
-  .row-actions{ display: flex; gap: 8px; flex-wrap: wrap; }
-  button{ background: var(--field); color: var(--text-muted); border: 1px solid var(--border); border-radius: 8px; padding: 7px 12px; font: inherit; font-size: 13px; cursor: pointer; }
-  button:hover{ color: var(--text); border-color: var(--accent); }
+  .ref td.dim{ color: var(--text-faint); }
+  .pair-pick{ max-width: 320px; }
+  .foot{ font-size: 12px; color: var(--text-faint); margin: 10px 0 0; }
+  .faint{ color: var(--text-faint); }
 
-  @media (max-width: 560px){
-    .panel{ padding: 14px; }
-    .mon-row{ grid-template-columns: 1fr 96px; }
-  }
+  @media (max-width: 560px){ .panel{ padding: 14px; } }
+  @media (prefers-reduced-motion: reduce){ *{ transition: none !important; } }
 </style>
 </head>
 <body>
@@ -122,62 +158,62 @@
   <header>
     <p class="eyebrow">PokeAlliance · Hazard</p>
     <h1>Calculadora de dano para Hazard</h1>
-    <p class="lede">Coloque o dano e o boost dos seus 6 pokémons. A página testa todas as duplas, mostra até que hazard cada uma chega com a sua runa de ataque, quanto falta pro próximo e o que muda se você usar Brute Berry, subir a runa, boostar os pokémons ou subir de nível.</p>
+    <p class="lede">Monte suas 3 duplas arrastando os pokémons pelo ⠿ (ou use o botão ⇄ para trocar). Cada quadro mostra o dano da dupla, o hazard que ela aguenta com a sua runa e quanto falta pro próximo.</p>
   </header>
 
   <section class="panel">
     <h2 class="panel-title">Configuração</h2>
     <div class="settings">
-      <label class="field">Runa de ataque atual
+      <label class="field">Runa de ataque
         <select id="rune"></select>
       </label>
       <label class="field">Precisão
         <input type="number" id="precision" min="0" step="5" placeholder="não considerar">
-        <span class="hint">Em branco = ignora a coluna Precisão da tabela.</span>
       </label>
-      <label class="field">Ganho de dano da Brute Berry (%)
-        <input type="number" id="berryPct" min="0" step="0.01">
-        <span class="hint">Padrão 3,83%: Meganium 287k → 298k. A berry dá +5% de ATK, mas o dano sobe menos.</span>
-      </label>
-    </div>
-    <h3 class="sub-title">Personagem, boost e medalhas</h3>
-    <div class="settings">
       <label class="field">Seu nível agora
         <input type="number" id="level" min="1" step="1">
       </label>
       <label class="field">Nível para simular
         <input type="number" id="levelSim" min="1" step="1">
       </label>
-      <label class="field">Ganho de dano por nível (%)
-        <input type="number" id="levelPct" min="0" step="0.01">
-        <span class="hint">Ainda sem medição: fica 0 até a gente calibrar.</span>
-      </label>
-      <label class="field">Ganho de dano por +1 de boost (%)
-        <input type="number" id="boostPct" min="0" step="0.01">
-        <span class="hint">Padrão 0,5%: Gardevoir 98,8k → 99,3k → 99,8k.</span>
-      </label>
-      <label class="field">Bônus extra de medalhas (%)
-        <input type="number" id="medalPct" min="0" step="0.1">
-        <span class="hint">0 = as medalhas que você já tem (já estão no dano medido).</span>
-      </label>
     </div>
+    <details class="more" id="moreSettings">
+      <summary>Ajustes de cálculo (berry, boost, nível, medalhas)</summary>
+      <div class="settings">
+        <label class="field">Ganho da Brute Berry (%)
+          <input type="number" id="berryPct" min="0" step="0.01">
+          <span class="hint">3,83%: Meganium 287k → 298k.</span>
+        </label>
+        <label class="field">Ganho por +1 de boost (%)
+          <input type="number" id="boostPct" min="0" step="0.01">
+          <span class="hint">0,5%: Gardevoir 98,8k → 99,3k → 99,8k.</span>
+        </label>
+        <label class="field">Ganho por nível (%)
+          <input type="number" id="levelPct" min="0" step="0.01">
+          <span class="hint">Ainda sem medição: 0.</span>
+        </label>
+        <label class="field">Bônus extra de medalhas (%)
+          <input type="number" id="medalPct" min="0" step="0.1">
+          <span class="hint">0 = as medalhas que você já tem.</span>
+        </label>
+      </div>
+    </details>
   </section>
 
   <section class="panel">
-    <h2 class="panel-title">Seu time <span>· dano em k</span></h2>
-    <div class="mons" id="mons"></div>
-    <div class="row-actions" style="margin-top:12px">
+    <div class="panel-head">
+      <h2 class="panel-title">Suas duplas <span>· dano em k</span></h2>
+      <span class="hint" id="swapHint">Arraste pelo ⠿ ou toque em ⇄ em dois pokémons para trocar.</span>
+    </div>
+    <div class="duos" id="duos"></div>
+    <div class="row-actions" style="margin-top:14px">
+      <button type="button" id="autoBalance">Equilibrar as 3 duplas</button>
+      <button type="button" id="autoStrong">Dupla mais forte primeiro</button>
       <button type="button" id="boostPlus5">Simular +5 de boost em todos</button>
-      <button type="button" id="simReset">Limpar simulação de boost, nível e medalha</button>
       <button type="button" id="berryAll">Simular berry em todos</button>
-      <button type="button" id="berryReal">Voltar berry como está no jogo</button>
+      <button type="button" id="simReset">Limpar simulações</button>
       <button type="button" id="reset">Restaurar time padrão</button>
     </div>
-  </section>
-
-  <section class="panel">
-    <h2 class="panel-title">Resumo</h2>
-    <div class="cards" id="summary"></div>
   </section>
 
   <section class="panel">
@@ -186,17 +222,16 @@
   </section>
 
   <section class="panel">
-    <h2 class="panel-title">Todas as duplas <span>· hazard por runa</span></h2>
-    <div class="table-wrap"><table id="pairs"></table></div>
-  </section>
-
-  <section class="panel">
-    <h2 class="panel-title">Tabela de referência <span>· dano necessário</span></h2>
-    <label class="field pair-pick">Destacar a dupla
-      <select id="refPair"></select>
-    </label>
-    <div class="table-wrap" style="margin-top:12px"><table class="ref" id="ref"></table></div>
-    <p class="foot">Valores copiados da imagem. Os sublinhados em vermelho parecem erro da tabela original (o valor não cresce em relação ao hazard anterior). A Runa 3 no Hazard 5 estava coberta pelo cursor; usei 610k. Para corrigir, edite <code>NEED</code> no código.</p>
+    <details id="refDetails">
+      <summary class="panel-title" style="cursor:pointer;margin:0">Tabela de referência <span>· dano necessário</span></summary>
+      <div style="margin-top:14px">
+        <label class="field pair-pick">Destacar
+          <select id="refPair"></select>
+        </label>
+        <div class="table-wrap" style="margin-top:12px"><table class="ref" id="ref"></table></div>
+        <p class="foot">Valores copiados da imagem. Os sublinhados em vermelho parecem erro da tabela original (não crescem em relação ao hazard anterior); a conta usa o maior valor até ali. A Runa 3 no Hazard 5 estava coberta pelo cursor; usei 610k.</p>
+      </div>
+    </details>
   </section>
 </main>
 
@@ -231,52 +266,70 @@ const RUNES = [
   {name:'Runa 5', bonus:'+10%', color:'var(--r5)'},
 ];
 const MAX_BOOST = 85;
-// Medido no nível 473 (26/11/2026).
+// Medido no nível 473 (26/11/2026). A ordem define as duplas: [0,1], [2,3], [4,5].
 const DEFAULT_TEAM = [
-  {name:'Tangrowth',        dmg:283, boost:23, measuredWithBerry:false, useBerry:false},
   {name:'Smeargle (grass)', dmg:303, boost:26, measuredWithBerry:true,  useBerry:true},
-  {name:'Gogoat',           dmg:282, boost:22, measuredWithBerry:false, useBerry:false},
+  {name:'Shiny Tangrowth',  dmg:301, boost:25, measuredWithBerry:true,  useBerry:true},
   {name:'Shiny Gogoat',     dmg:296, boost:25, measuredWithBerry:true,  useBerry:true},
   {name:'Meganium',         dmg:293, boost:23, measuredWithBerry:false, useBerry:false},
-  {name:'Shiny Tangrowth',  dmg:301, boost:25, measuredWithBerry:true,  useBerry:true},
+  {name:'Tangrowth',        dmg:283, boost:23, measuredWithBerry:false, useBerry:false},
+  {name:'Gogoat',           dmg:282, boost:22, measuredWithBerry:false, useBerry:false},
 ].map(m => ({...m, boostSim: m.boost}));
 const DEFAULT_LEVEL = 473;
 const DEFAULT_BERRY = +((298/287 - 1) * 100).toFixed(2); // 3.83
-const DEFAULT_BOOST_PCT = 0.5;  // Gardevoir 98.8k → 99.3k → 99.8k
-const KEY = 'pka-hazard-calc-v2';
-
-let state = load();
+const DEFAULT_BOOST_PCT = 0.5;
+const KEY = 'pka-hazard-calc-v3';
 
 function defaults(){
   return {team: structuredClone(DEFAULT_TEAM), rune:0, precision:'', berryPct:DEFAULT_BERRY,
-    level:DEFAULT_LEVEL, levelSim:DEFAULT_LEVEL, levelPct:0, boostPct:DEFAULT_BOOST_PCT, medalPct:0};
+    level:DEFAULT_LEVEL, levelSim:DEFAULT_LEVEL, levelPct:0, boostPct:DEFAULT_BOOST_PCT, medalPct:0, refDuo:0};
 }
 function load(){
   try{
     const s = JSON.parse(localStorage.getItem(KEY));
-    if(s && Array.isArray(s.team) && s.team.length) return {...defaults(), ...s};
+    if(s && Array.isArray(s.team) && s.team.length === 6) return {...defaults(), ...s};
   }catch(e){}
   return defaults();
 }
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){} }
+let state = load();
+let picked = null; // índice escolhido no "toque para trocar"
 
 const $ = id => document.getElementById(id);
 const fmt = n => (Math.round(n*10)/10).toLocaleString('pt-BR', {maximumFractionDigits:1}) + 'k';
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-
-function berryF(){ return 1 + (Number(state.berryPct)||0)/100; }
-function baseDmg(m){ return (Number(m.dmg)||0) / (m.measuredWithBerry ? berryF() : 1); }
 const pct = v => (Number(v) || 0) / 100;
 const clampBoost = v => Math.max(0, Math.min(MAX_BOOST, Math.round(Number(v) || 0)));
-// Multiplicador de tudo que não é berry: nível e medalhas simulados.
+
+// ---------- Modelo de dano ----------
+function berryF(){ return 1 + pct(state.berryPct); }
+function baseDmg(m){ return (Number(m.dmg)||0) / (m.measuredWithBerry ? berryF() : 1); }
 function charF(){ return (1 + pct(state.levelPct) * ((Number(state.levelSim)||0) - (Number(state.level)||0))) * (1 + pct(state.medalPct)); }
-// Ganho de +1 de boost, em k, para esse pokémon (relativo ao dano medido).
 function boostGain(m, berry = m.useBerry){ return baseDmg(m) * (berry ? berryF() : 1) * pct(state.boostPct) * charF(); }
 function dmgOf(m, berry = m.useBerry, boost = m.boostSim){
   return baseDmg(m) * (berry ? berryF() : 1) * (1 + pct(state.boostPct) * (boost - m.boost)) * charF();
 }
-// Boosts para a dupla chegar a `target` de dano. Sobe sempre quem está com o boost
-// mais baixo (pedra mais barata); empate → quem ganha mais por +1. Limite +85.
+// Dano exigido "efetivo": nunca menor que o do hazard anterior (corrige os erros da imagem).
+function need(h, r){ let v = 0; for(let k = 0; k <= h; k++) v = Math.max(v, NEED[k][r]); return v; }
+function precisionOk(h){
+  if(state.precision === '' || state.precision == null) return true;
+  return Number(state.precision) >= NEED[h][6];
+}
+function hazardFor(dmg, r){
+  let best = -1;
+  for(let h = 0; h < NEED.length; h++) if(dmg >= need(h, r) && precisionOk(h)) best = h;
+  return best;
+}
+function nextGoal(dmg, r){
+  const cur = hazardFor(dmg, r);
+  for(let h = cur + 1; h < NEED.length; h++){
+    if(!precisionOk(h)) return {h, blocked:true, prec: NEED[h][6]};
+    if(dmg < need(h, r)) return {h, missing: Math.max(0.1, need(h, r) - dmg)};
+  }
+  return null;
+}
+// Boosts para a dupla (índices do time) chegar a `target`. Sobe primeiro quem está
+// com o boost mais baixo (pedra mais barata); empate → quem ganha mais por +1.
 function boostsToReach(i, j, target){
   const mons = [state.team[i], state.team[j]];
   let missing = target - (dmgOf(mons[0]) + dmgOf(mons[1]));
@@ -285,305 +338,349 @@ function boostsToReach(i, j, target){
     const cand = [0, 1].filter(k => mons[k].boostSim + add[k] < MAX_BOOST && boostGain(mons[k]) > 0);
     if(!cand.length) return null;
     cand.sort((x, y) => (mons[x].boostSim + add[x]) - (mons[y].boostSim + add[y]) || boostGain(mons[y]) - boostGain(mons[x]));
-    const k = cand[0];
-    add[k]++; missing -= boostGain(mons[k]);
+    add[cand[0]]++; missing -= boostGain(mons[cand[0]]);
   }
   return {add};
 }
 
-// Dano exigido "efetivo": nunca menor que o do hazard anterior (corrige os erros da imagem).
-function need(h, r){ let v = 0; for(let k = 0; k <= h; k++) v = Math.max(v, NEED[k][r]); return v; }
-function precisionOk(h){
-  if(state.precision === '' || state.precision == null) return true;
-  return Number(state.precision) >= NEED[h][6];
+// ---------- Duplas ----------
+const duoIdx = d => [d*2, d*2+1];
+function duoInfo(d, team = state.team){
+  const [i, j] = duoIdx(d);
+  const dmg = dmgOf(team[i]) + dmgOf(team[j]);
+  const now = (Number(team[i].dmg)||0) + (Number(team[j].dmg)||0);
+  return {d, i, j, dmg, now, hz: RUNES.map((_, r) => hazardFor(dmg, r))};
 }
-// Maior hazard que o dano alcança com a runa r (-1 = nenhum).
-function hazardFor(dmg, r){
-  let best = -1;
-  for(let h = 0; h < NEED.length; h++) if(dmg >= need(h, r) && precisionOk(h)) best = h;
-  return best;
+const duoName = info => `${state.team[info.i].name} + ${state.team[info.j].name}`;
+const hzLabel = h => h < 0 ? '—' : h;
+// Nota de uma formação: soma dos hazards, depois o menor, depois o menor dano.
+function scoreOf(team){
+  const r = state.rune, ds = [0,1,2].map(d => duoInfo(d, team));
+  const hs = ds.map(x => x.hz[r]);
+  return [hs.reduce((a,b)=>a+b,0), Math.min(...hs), Math.min(...ds.map(x => x.dmg))];
 }
-// Próximo hazard acima do atual e quanto falta.
-function nextGoal(dmg, r){
-  const cur = hazardFor(dmg, r);
-  for(let h = cur + 1; h < NEED.length; h++){
-    if(!precisionOk(h)) return {h, blocked:true, need: NEED[h][6]};
-    if(dmg < need(h, r)) return {h, missing: Math.max(0.1, need(h, r) - dmg)};
-  }
-  return null;
-}
-
-function pairs(){
-  const t = state.team, out = [];
-  for(let i = 0; i < t.length; i++) for(let j = i+1; j < t.length; j++){
-    const dmg = dmgOf(t[i]) + dmgOf(t[j]);
-    out.push({i, j, dmg, hz: RUNES.map((_, r) => hazardFor(dmg, r))});
-  }
-  return out.sort((a,b) => b.dmg - a.dmg);
-}
-const pairName = p => `${state.team[p.i].name} + ${state.team[p.j].name}`;
-
-// Melhor jeito de dividir o time em duplas (maior soma de hazards; empate → maior hazard mínimo).
-function bestSplit(){
-  const n = state.team.length;
-  if(n < 2 || n % 2) return null;
-  const r = state.rune;
-  let best = null;
+const better = (a, b) => { for(let k = 0; k < a.length; k++){ if(a[k] > b[k] + 1e-9) return true; if(a[k] < b[k] - 1e-9) return false; } return false; };
+function allSplits(){
+  const out = [];
   const rec = (left, acc) => {
-    if(!left.length){
-      const hs = acc.map(p => p.hz[r]);
-      const score = [hs.reduce((a,b)=>a+b,0), Math.min(...hs)];
-      if(!best || score[0] > best.score[0] || (score[0] === best.score[0] && score[1] > best.score[1])) best = {acc:[...acc], score};
-      return;
-    }
+    if(!left.length){ out.push(acc.flat()); return; }
     const [a, ...rest] = left;
-    rest.forEach((b, k) => {
-      const dmg = dmgOf(state.team[a]) + dmgOf(state.team[b]);
-      acc.push({i:a, j:b, dmg, hz: RUNES.map((_, rr) => hazardFor(dmg, rr))});
-      rec(rest.filter((_, kk) => kk !== k), acc);
-      acc.pop();
-    });
+    rest.forEach((b, k) => rec(rest.filter((_, kk) => kk !== k), [...acc, [a, b]]));
   };
-  rec([...Array(n).keys()], []);
-  return best;
+  rec([0,1,2,3,4,5], []);
+  return out; // 15 formações, cada uma é uma ordem de índices
+}
+function applyOrder(order){ state.team = order.map(k => state.team[k]); }
+function autoBalance(){
+  let best = null;
+  for(const o of allSplits()){
+    const t = o.map(k => state.team[k]);
+    const s = scoreOf(t);
+    if(!best || better(s, best.s)) best = {o, s};
+  }
+  applyOrder(best.o); sortDuos();
+}
+function autoStrong(){
+  const left = [0,1,2,3,4,5], order = [];
+  while(left.length){
+    let best = null;
+    for(let a = 0; a < left.length; a++) for(let b = a+1; b < left.length; b++){
+      const d = dmgOf(state.team[left[a]]) + dmgOf(state.team[left[b]]);
+      if(!best || d > best.d) best = {a: left[a], b: left[b], d};
+    }
+    order.push(best.a, best.b);
+    left.splice(left.indexOf(best.a), 1); left.splice(left.indexOf(best.b), 1);
+  }
+  applyOrder(order);
+}
+// Coloca as duplas da mais forte pra mais fraca, mantendo os pares.
+function sortDuos(){
+  const ds = [0,1,2].map(d => duoInfo(d)).sort((a,b) => b.dmg - a.dmg);
+  state.team = ds.flatMap(x => [state.team[x.i], state.team[x.j]]);
+}
+function swap(a, b){
+  if(a === b) return;
+  [state.team[a], state.team[b]] = [state.team[b], state.team[a]];
 }
 
+// ---------- Render ----------
 function renderSettings(){
   $('rune').innerHTML = RUNES.map((r, i) => `<option value="${i}">${r.name} (${r.bonus})</option>`).join('');
   $('rune').value = state.rune;
-  $('precision').value = state.precision;
-  $('berryPct').value = state.berryPct;
-  for(const k of ['level','levelSim','levelPct','boostPct','medalPct']) $(k).value = state[k];
+  for(const k of ['precision','level','levelSim','berryPct','levelPct','boostPct','medalPct']) $(k).value = state[k];
 }
 const boostOpts = sel => Array.from({length: MAX_BOOST + 1}, (_, b) => `<option value="${b}" ${b===sel?'selected':''}>+${b}</option>`).join('');
 function monOutHTML(m){
   const sim = dmgOf(m), diff = sim - m.dmg;
-  return `<span>Agora <b style="font-size:13px">${fmt(m.dmg)}</b> <span class="faint">(sem berry ${fmt(baseDmg(m))})</span></span>
-    <span>Simulado <b>${fmt(sim)}</b> ${Math.abs(diff) >= 0.05 ? `<span class="up">${diff>0?'+':''}${fmt(diff)}</span>` : ''} ${m.useBerry ? '<span class="tag-berry">berry</span>' : ''}</span>`;
+  return `<span>Jogo ${fmt(m.dmg)}</span>
+    <span>Cálculo <b>${fmt(sim)}</b> ${Math.abs(diff) >= 0.05 ? `<span class="up">${diff>0?'+':''}${fmt(diff)}</span>` : ''} ${m.useBerry ? '<span class="tag-berry">berry</span>' : ''}</span>`;
 }
-
-function renderMons(){
-  $('mons').innerHTML = state.team.map((m, i) => `
-    <div class="mon ${m.useBerry ? 'berry-on' : ''}" data-i="${i}">
-      <div class="mon-row">
-        <input type="text" data-f="name" value="${esc(m.name)}" aria-label="Nome do pokémon ${i+1}" placeholder="Nome">
-        <input type="number" data-f="dmg" value="${m.dmg}" min="0" step="0.1" aria-label="Dano de ${esc(m.name)} em k">
-      </div>
-      <div class="mon-row boost">
-        <label>Boost agora<input type="number" data-f="boost" value="${m.boost}" min="0" max="${MAX_BOOST}" step="1"></label>
-        <label>Simular boost<select data-f="boostSim">${boostOpts(m.boostSim)}</select></label>
-      </div>
-      <div class="checks">
-        <label title="Marque se o dano digitado já foi medido com a berry ativa"><input type="checkbox" data-f="measuredWithBerry" ${m.measuredWithBerry?'checked':''}> dano medido com berry</label>
-        <label><input type="checkbox" data-f="useBerry" ${m.useBerry?'checked':''}> usar Brute Berry</label>
-      </div>
-      <div class="mon-out">${monOutHTML(m)}</div>
-    </div>`).join('');
+function monHTML(m, i){
+  return `<div class="mon ${m.useBerry ? 'berry-on' : ''} ${picked === i ? 'picked' : ''}" data-i="${i}">
+    <div class="mon-top">
+      <span class="handle" title="Arraste para trocar de lugar" aria-hidden="true">⠿</span>
+      <input type="text" id="name-${i}" data-f="name" value="${esc(m.name)}" aria-label="Nome" placeholder="Nome">
+      <input type="number" id="dmg-${i}" data-f="dmg" value="${m.dmg}" min="0" step="0.1" aria-label="Dano em k medido no jogo">
+      <button type="button" class="swap" data-act="pick" title="Trocar de lugar" aria-label="Trocar ${esc(m.name)} de lugar">⇄</button>
+    </div>
+    <div class="mon-row">
+      <label>Boost agora<input type="number" id="boost-${i}" data-f="boost" value="${m.boost}" min="0" max="${MAX_BOOST}" step="1"></label>
+      <label>Simular boost<select id="boostSim-${i}" data-f="boostSim">${boostOpts(m.boostSim)}</select></label>
+    </div>
+    <div class="checks">
+      <label title="O dano digitado já foi medido com a berry ativa"><input type="checkbox" data-f="measuredWithBerry" ${m.measuredWithBerry?'checked':''}> medido c/ berry</label>
+      <label><input type="checkbox" data-f="useBerry" ${m.useBerry?'checked':''}> usar berry</label>
+    </div>
+    <div class="mon-out">${monOutHTML(m)}</div>
+  </div>`;
 }
-
-function hzLabel(h){ return h < 0 ? '—' : h; }
-
-function renderSummary(ps){
-  const r = state.rune, top = ps[0], split = bestSplit();
-  const ng = nextGoal(top.dmg, r);
-  const totalTeam = state.team.reduce((s, m) => s + dmgOf(m), 0);
-  $('summary').innerHTML = `
-    <div class="card"><h3>Melhor dupla</h3><div class="big">Hazard ${hzLabel(top.hz[r])}</div>
-      <div class="sub">${esc(pairName(top))}<br>${fmt(top.dmg)} com ${RUNES[r].name}</div></div>
-    <div class="card"><h3>Próximo hazard</h3>${ng
-      ? (ng.blocked ? `<div class="big">Hazard ${ng.h}</div><div class="sub">Precisa de precisão ${ng.need}</div>`
-                    : `<div class="big">+${fmt(ng.missing)}</div><div class="sub">faltam para o Hazard ${ng.h} com a melhor dupla</div>`)
-      : `<div class="big">Máximo</div><div class="sub">Já passa o Hazard 17</div>`}</div>
-    <div class="card"><h3>Divisão em 3 duplas</h3>${split
-      ? `<div class="big">${split.acc.map(p => hzLabel(p.hz[r])).join(' · ')}</div><div class="sub">${split.acc.map(p => esc(pairName(p))).join('<br>')}</div>`
-      : `<div class="sub">Precisa de número par de pokémons.</div>`}</div>
-    ${(() => {
-      // Melhor dupla com o dano medido no jogo, sem nenhuma simulação.
-      let now = null; const t = state.team;
-      for(let i = 0; i < t.length; i++) for(let j = i+1; j < t.length; j++){
-        const d = (Number(t[i].dmg)||0) + (Number(t[j].dmg)||0);
-        if(!now || d > now.d) now = {d, i, j};
-      }
-      const hNow = hazardFor(now.d, r), changed = Math.abs(top.dmg - now.d) >= 0.05;
-      return `<div class="card"><h3>Hoje × simulado</h3><div class="big">H${hzLabel(hNow)} → H${hzLabel(top.hz[r])}</div>
-        <div class="sub">${changed ? `Hoje ${fmt(now.d)} · simulado ${fmt(top.dmg)}` : 'Sem simulação: igual ao jogo'}<br>${state.team.filter(m=>m.useBerry).length}/${t.length} com berry · time ${fmt(totalTeam)}</div></div>`;
-    })()}`;
+function ladderHTML(info){
+  const r = state.rune, h = info.hz[r];
+  const lo = need(0, r) - 25, hi = need(NEED.length - 1, r) + 10;
+  const x = v => Math.max(0, Math.min(100, (v - lo) / (hi - lo) * 100));
+  const ng = nextGoal(info.dmg, r);
+  const label = k => k === 0 || k === NEED.length - 1 || k === h || (ng && k === ng.h) || k % 5 === 0;
+  let ticks = '', labels = '';
+  for(let k = 0; k < NEED.length; k++){
+    const p = x(need(k, r)), hit = k <= h;
+    ticks += `<span class="tick ${hit?'hit':''}" style="left:${p}%"></span>`;
+    if(label(k)) labels += `<span class="tl ${k===h?'hit':''} ${ng && k===ng.h?'next':''}" style="left:${p}%">H${k}</span>`;
+  }
+  const showNow = Math.abs(info.now - info.dmg) >= 0.05;
+  return `<div class="ladder" role="img" aria-label="Dano ${fmt(info.dmg)} na régua de hazards da ${RUNES[r].name}">
+    <div class="track"><div class="fill" style="width:${x(info.dmg)}%"></div>${ticks}</div>
+    ${showNow ? `<span class="now" style="left:${x(info.now)}%" title="Dano no jogo hoje"></span>` : ''}
+    ${labels}</div>`;
 }
-
-function renderTips(ps){
-  const r = state.rune, top = ps[0], tips = [];
-  const curH = top.hz[r];
-
-  // Berry: o que muda na melhor dupla e qual pokémon sem berry rende mais.
-  const noBerry = state.team.map((m, i) => ({m, i})).filter(x => !x.m.useBerry);
-  if(noBerry.length){
-    // Dupla mais forte considerando berry em quem não tem.
-    let bestWith = null;
-    state.team.forEach((a, i) => state.team.forEach((b, j) => {
-      if(j <= i) return;
-      const dmg = dmgOf(a, true) + dmgOf(b, true);
-      if(!bestWith || dmg > bestWith.dmg) bestWith = {i, j, dmg, h: hazardFor(dmg, r)};
-    }));
-    const needsBerry = [bestWith.i, bestWith.j].filter(k => !state.team[k].useBerry).map(k => state.team[k].name);
-    if(bestWith.h > curH){
-      tips.push({cls:'berry', html:`Com berry em <b>${esc(needsBerry.join(' e '))}</b>, a dupla <b>${esc(pairName(bestWith))}</b> chega a ${fmt(bestWith.dmg)} → <b>Hazard ${bestWith.h}</b> (hoje o máximo é ${hzLabel(curH)}).`});
-    } else {
-      const gains = noBerry.map(x => `${esc(x.m.name)} +${fmt(dmgOf(x.m,true) - dmgOf(x.m,false))}`).join(', ');
-      tips.push({cls:'berry', html:`Colocar berry em quem ainda não tem não sobe o hazard da melhor dupla com ${RUNES[r].name}. Ganho por pokémon: ${gains}.`});
-    }
-  } else {
-    tips.push({cls:'berry', html:`Todos estão com berry. Lembre que ela dura <b>1h</b>: ative perto da hora do hazard.`});
-  }
-
-  // Berry só onde importa: pokémon da melhor dupla com berry que não precisariam dela.
-  const topMons = [top.i, top.j];
-  const withoutBerryDmg = dmgOf(state.team[top.i], false) + dmgOf(state.team[top.j], false);
-  if(topMons.some(k => state.team[k].useBerry) && hazardFor(withoutBerryDmg, r) === curH){
-    tips.push({cls:'berry', html:`A melhor dupla faz Hazard ${hzLabel(curH)} mesmo <b>sem berry</b> (${fmt(withoutBerryDmg)}). Dá pra economizar a berry nesse hazard.`});
-  }
-
-  // Runa: menor runa que sobe o hazard da melhor dupla.
-  if(r < 5){
-    const up = RUNES.findIndex((_, rr) => rr > r && top.hz[rr] > curH);
-    if(up > 0){
-      tips.push({cls:'rune', html:`Subir para <b>${RUNES[up].name} (${RUNES[up].bonus})</b> leva <b>${esc(pairName(top))}</b> ao <b>Hazard ${top.hz[up]}</b>. Com Runa 5: Hazard ${hzLabel(top.hz[5])}.`});
-    } else {
-      tips.push({cls:'rune', html:`Nem a Runa 5 sobe o hazard da melhor dupla (fica no ${hzLabel(top.hz[5])}). Precisa de mais dano nos pokémons.`});
-    }
-  }
-
-  // Boost: quanto boost a melhor dupla precisa pros próximos hazards,
-  // e qual dupla chega no próximo com menos boost no total.
+function duoNextHTML(info){
+  const r = state.rune, h = info.hz[r], ng = nextGoal(info.dmg, r);
+  if(!ng) return 'Passa do Hazard 17.';
+  if(ng.blocked) return `O Hazard ${ng.h} pede precisão <b>${ng.prec}</b>.`;
+  const parts = [`Faltam <b>${fmt(ng.missing)}</b> pro <b>H${ng.h}</b>`];
+  const up = RUNES.findIndex((_, rr) => rr > r && info.hz[rr] > h);
+  if(up > 0) parts.push(`ou ${RUNES[up].name}`);
   if(pct(state.boostPct) > 0){
-    const lines = [];
-    for(let h = curH + 1; h < NEED.length && lines.length < 3; h++){
-      if(!precisionOk(h)) break;
-      const nb = boostsToReach(top.i, top.j, need(h, r));
-      if(!nb){ lines.push(`Hazard ${h}: não chega nem com os dois no +${MAX_BOOST}`); break; }
-      const parts = [top.i, top.j].map((k, n) => nb.add[n] ? `${esc(state.team[k].name)} +${state.team[k].boostSim} → <b>+${state.team[k].boostSim + nb.add[n]}</b>` : '').filter(Boolean);
-      lines.push(`Hazard ${h}: ${parts.join(' e ')}`);
+    const nb = boostsToReach(info.i, info.j, need(ng.h, r));
+    if(nb){
+      const s = [info.i, info.j].map((k, n) => nb.add[n] ? `${esc(state.team[k].name.split(' (')[0])} <b>+${state.team[k].boostSim + nb.add[n]}</b>` : '').filter(Boolean);
+      parts.push(`ou boost: ${s.join(', ')}`);
     }
-    if(lines.length) tips.push({cls:'rune', html:`<b>Boost na melhor dupla</b> (${esc(pairName(top))}, ${RUNES[r].name}):<br>${lines.join('<br>')}`});
+  }
+  return parts.join(' · ');
+}
+function duoHTML(d){
+  const info = duoInfo(d), r = state.rune, [i, j] = duoIdx(d);
+  const diff = info.dmg - info.now;
+  return `<div class="duo" data-d="${d}">
+    <div class="duo-head"><h3>Dupla ${d+1}</h3><span class="faint" style="font-size:12px">${RUNES[r].name}</span></div>
+    ${monHTML(state.team[i], i)}
+    ${monHTML(state.team[j], j)}
+    <div class="duo-foot">
+      <div class="duo-score">
+        <div><div class="lbl">Dano total</div><div class="dmg">${fmt(info.dmg)}</div>
+          ${Math.abs(diff) >= 0.05 ? `<div class="delta">jogo ${fmt(info.now)} <span class="up">${diff>0?'+':''}${fmt(diff)}</span></div>` : ''}</div>
+        <div><div class="lbl" style="text-align:right">Aguenta</div><div class="hzbig"><small>H</small>${hzLabel(info.hz[r])}</div></div>
+      </div>
+      ${ladderHTML(info)}
+      <div class="runes" aria-label="Hazard por runa">${info.hz.map((h, rr) =>
+        `<span class="${rr===r?'cur':''}" style="--rc:${RUNES[rr].color}" title="${RUNES[rr].name}"><i>R${rr}</i>${hzLabel(h)}</span>`).join('')}</div>
+      <div class="duo-next">${duoNextHTML(info)}</div>
+    </div>
+  </div>`;
+}
+function renderDuos(){
+  $('duos').innerHTML = [0,1,2].map(duoHTML).join('');
+  $('swapHint').textContent = picked === null
+    ? 'Arraste pelo ⠿ ou toque em ⇄ em dois pokémons para trocar.'
+    : `Agora toque em ⇄ no pokémon que vai trocar com ${state.team[picked].name}.`;
+}
 
-    const target = curH + 1;
-    if(target < NEED.length && precisionOk(target)){
-      let cheap = null;
-      for(const p of ps){
-        const nb = boostsToReach(p.i, p.j, need(target, r));
-        if(!nb) continue;
-        const total = nb.add[0] + nb.add[1];
-        if(!cheap || total < cheap.total) cheap = {p, nb, total};
-      }
-      if(cheap && (cheap.p.i !== top.i || cheap.p.j !== top.j)){
-        tips.push({cls:'rune', html:`A dupla que chega no <b>Hazard ${target}</b> com menos boost é <b>${esc(pairName(cheap.p))}</b>: ${cheap.total} níveis de boost no total.`});
-      }
-    }
-    const perBoost = state.team.map(m => `${esc(m.name)} ${fmt(boostGain(m))}`).join(', ');
-    tips.push({cls:'', html:`Cada +1 de boost vale mais ou menos: ${perBoost}. Pedras de boost mais altas custam mais caro, então às vezes compensa boostar quem está mais baixo.`});
+function renderTips(){
+  const r = state.rune, tips = [];
+  const ds = [0,1,2].map(d => duoInfo(d));
+
+  // Melhor troca única entre duplas.
+  const cur = scoreOf(state.team);
+  let bestSwap = null;
+  for(let a = 0; a < 6; a++) for(let b = a+1; b < 6; b++){
+    if(Math.floor(a/2) === Math.floor(b/2)) continue;
+    const t = [...state.team]; [t[a], t[b]] = [t[b], t[a]];
+    const s = scoreOf(t);
+    if(better(s, cur) && (!bestSwap || better(s, bestSwap.s))) bestSwap = {a, b, s};
+  }
+  if(bestSwap){
+    tips.push({cls:'good', html:`Trocar <b>${esc(state.team[bestSwap.a].name)}</b> com <b>${esc(state.team[bestSwap.b].name)}</b> deixa as duplas em H${(() => { const t=[...state.team]; [t[bestSwap.a],t[bestSwap.b]]=[t[bestSwap.b],t[bestSwap.a]]; return [0,1,2].map(d=>hzLabel(duoInfo(d,t).hz[r])).join(' · H'); })()} (hoje H${ds.map(x=>hzLabel(x.hz[r])).join(' · H')}).<button type="button" data-swap="${bestSwap.a}-${bestSwap.b}">Trocar</button>`});
   }
 
-  // Precisão bloqueando.
-  if(state.precision !== '' && state.precision != null){
-    const unclamped = (() => { let b=-1; for(let h=0;h<NEED.length;h++) if(top.dmg >= NEED[h][r]) b=h; return b; })();
-    if(unclamped > curH) tips.push({cls:'warn', html:`Seu dano já daria o <b>Hazard ${unclamped}</b>, mas a precisão (${state.precision}) só libera até o ${hzLabel(curH)}. O Hazard ${unclamped} pede precisão ${NEED[unclamped][6]}.`});
-  } else if(curH >= 5){
-    tips.push({cls:'warn', html:`A partir do Hazard 5 a tabela pede precisão (o Hazard ${curH} pede ${NEED[curH][6]}). Preencha sua precisão em Configuração para filtrar.`});
+  // Berry: em qual dupla colocar berry em quem não tem sobe o hazard.
+  for(const info of ds){
+    const missing = [info.i, info.j].filter(k => !state.team[k].useBerry);
+    if(!missing.length) continue;
+    const withB = [info.i, info.j].reduce((s, k) => s + dmgOf(state.team[k], true), 0);
+    const hB = hazardFor(withB, r);
+    if(hB > info.hz[r]) tips.push({cls:'berry', html:`Berry em <b>${esc(missing.map(k => state.team[k].name).join(' e '))}</b> leva a Dupla ${info.d+1} de H${hzLabel(info.hz[r])} para <b>H${hB}</b> (${fmt(withB)}).`});
   }
+  // Berry sobrando: dupla que faz o mesmo hazard sem berry.
+  for(const info of ds){
+    const using = [info.i, info.j].filter(k => state.team[k].useBerry);
+    if(!using.length) continue;
+    const noB = [info.i, info.j].reduce((s, k) => s + dmgOf(state.team[k], false), 0);
+    if(hazardFor(noB, r) === info.hz[r] && info.hz[r] >= 0) tips.push({cls:'berry', html:`A Dupla ${info.d+1} faz H${info.hz[r]} mesmo <b>sem berry</b> (${fmt(noB)}). Dá pra guardar a berry.`});
+  }
+  if(!tips.some(t => t.cls === 'berry') && state.team.some(m => !m.useBerry))
+    tips.push({cls:'berry', html:`Pôr berry em quem ainda não tem não sobe o hazard de nenhuma dupla com a ${RUNES[r].name}.`});
 
-  // Duplas empatadas no topo.
-  const sameH = ps.filter(p => p.hz[r] === curH).length;
-  if(sameH > 1) tips.push({cls:'', html:`<b>${sameH} duplas</b> chegam ao Hazard ${hzLabel(curH)} com ${RUNES[r].name}. Qualquer uma delas serve; a tabela abaixo mostra quanto sobra de folga.`});
+  // Precisão.
+  const topH = Math.max(...ds.map(x => x.hz[r]));
+  if(state.precision === '' || state.precision == null){
+    if(topH >= 5) tips.push({cls:'warn', html:`A partir do Hazard 5 a tabela pede precisão (H${topH} pede ${NEED[topH][6]}). Preencha sua precisão lá em cima para a conta considerar.`});
+  }
+  const perBoost = state.team.map(m => `${esc(m.name)} ${fmt(boostGain(m))}`).join(', ');
+  if(pct(state.boostPct) > 0) tips.push({cls:'rune', html:`Cada +1 de boost vale mais ou menos: ${perBoost}. As pedras altas custam mais, então o quadro sugere subir primeiro quem está com boost mais baixo.`});
 
   $('tips').innerHTML = tips.map(t => `<li class="${t.cls}">${t.html}</li>`).join('');
 }
 
-function renderPairs(ps){
-  const r = state.rune;
-  const head = `<tr><th>Dupla</th><th class="num">Dano</th><th class="num">Folga / falta</th>${RUNES.map((x, i) =>
-    `<th class="num"><span class="rune-dot" style="background:${x.color}"></span>R${i}</th>`).join('')}</tr>`;
-  const rows = ps.map((p, k) => {
-    const h = p.hz[r];
-    const slack = h >= 0 ? p.dmg - need(h, r) : null;
-    const ng = nextGoal(p.dmg, r);
-    const info = `${slack != null ? `<span class="gain">+${fmt(slack)}</span>` : ''}${ng && !ng.blocked ? ` <span class="faint">/ −${fmt(ng.missing)} p/ H${ng.h}</span>` : ''}`;
-    return `<tr class="${k===0?'best':''}"><td>${esc(pairName(p))}</td><td class="num">${fmt(p.dmg)}</td><td class="num">${info}</td>${
-      p.hz.map((x, rr) => `<td class="num"><span class="hz ${rr===r?'cur':''} ${x<0?'none':''}">${hzLabel(x)}</span></td>`).join('')}</tr>`;
-  }).join('');
-  $('pairs').innerHTML = `<thead>${head}</thead><tbody>${rows}</tbody>`;
-}
-
-function renderRef(ps){
-  const sel = $('refPair');
-  const prev = sel.value;
-  sel.innerHTML = ps.map((p, k) => `<option value="${p.i}-${p.j}">${esc(pairName(p))} (${fmt(p.dmg)})</option>`).join('');
-  if([...sel.options].some(o => o.value === prev)) sel.value = prev;
-  const [i, j] = sel.value.split('-').map(Number);
-  const dmg = dmgOf(state.team[i]) + dmgOf(state.team[j]);
-  const r = state.rune;
-  const head = `<tr><th>Hazard</th>${RUNES.map(x => `<th class="num"><span class="rune-dot" style="background:${x.color}"></span>${x.name} (${x.bonus})</th>`).join('')}<th class="num">Precisão</th></tr>`;
+function renderRef(){
+  const sel = $('refPair'), r = state.rune;
+  const ds = [0,1,2].map(d => duoInfo(d));
+  sel.innerHTML = ds.map(x => `<option value="${x.d}">Dupla ${x.d+1}: ${esc(duoName(x))} (${fmt(x.dmg)})</option>`).join('');
+  sel.value = String(state.refDuo || 0);
+  const dmg = ds[Number(sel.value)].dmg;
+  const head = `<tr><th>Hazard</th>${RUNES.map(x => `<th><span class="rune-dot" style="background:${x.color}"></span>${x.name}</th>`).join('')}<th>Precisão</th></tr>`;
   const rows = NEED.map((row, h) => `<tr><td><b>${h}</b></td>${row.slice(0,6).map((v, rr) => {
       const typo = h > 0 && v <= NEED[h-1][rr];
       const hit = dmg >= need(h, rr) && precisionOk(h);
-      return `<td class="num ${hit?'hit':''} ${rr===r?'cur-col':''} ${typo?'typo':''}" ${typo?'title="Parece erro na tabela original"':''}>${v}k</td>`;
-    }).join('')}<td class="num ${precisionOk(h)?'':'faint'}">${row[6]}</td></tr>`).join('');
+      return `<td class="${hit?'hit':''} ${rr===r?'cur-col':''} ${typo?'typo':''}" ${typo?'title="Parece erro na tabela original"':''}>${v}k</td>`;
+    }).join('')}<td class="${precisionOk(h)?'':'dim'}">${row[6]}</td></tr>`).join('');
   $('ref').innerHTML = `<thead>${head}</thead><tbody>${rows}</tbody>`;
 }
 
-function render(full){
-  if(full) renderMons();
-  const ps = pairs();
-  renderSummary(ps); renderTips(ps); renderPairs(ps); renderRef(ps);
-  save();
+function render(){
+  renderDuos(); renderTips(); renderRef(); save();
+}
+// Atualiza só os números sem recriar os inputs (mantém o foco ao digitar).
+function refreshNumbers(){
+  document.querySelectorAll('.duo').forEach(el => {
+    const d = +el.dataset.d, tmp = document.createElement('div');
+    tmp.innerHTML = duoHTML(d);
+    el.querySelector('.duo-foot').replaceWith(tmp.querySelector('.duo-foot'));
+    el.querySelectorAll('.mon').forEach(mEl => {
+      const m = state.team[+mEl.dataset.i];
+      mEl.querySelector('.mon-out').innerHTML = monOutHTML(m);
+    });
+  });
+  renderTips(); renderRef(); save();
 }
 
-// Eventos
+// ---------- Eventos ----------
 $('rune').addEventListener('change', e => { state.rune = +e.target.value; render(); });
-$('precision').addEventListener('input', e => { state.precision = e.target.value; render(); });
-$('berryPct').addEventListener('input', e => { state.berryPct = e.target.value; render(true); });
-$('refPair').addEventListener('change', () => render());
-for(const k of ['level','levelSim','levelPct','boostPct','medalPct']){
+for(const k of ['precision','level','levelSim','berryPct','levelPct','boostPct','medalPct']){
   $(k).addEventListener('input', e => {
     const old = state[k];
     state[k] = e.target.value;
-    // Mudou o nível atual e a simulação estava igual a ele: acompanha.
     if(k === 'level' && String(state.levelSim) === String(old)){ state.levelSim = e.target.value; $('levelSim').value = e.target.value; }
-    render(true);
+    render();
   });
 }
-$('mons').addEventListener('input', e => {
+$('refPair').addEventListener('change', e => { state.refDuo = +e.target.value; renderRef(); save(); });
+
+const duosEl = $('duos');
+duosEl.addEventListener('input', e => {
   const card = e.target.closest('.mon'); if(!card) return;
-  const m = state.team[+card.dataset.i], f = e.target.dataset.f;
-  if(e.target.type === 'checkbox') m[f] = e.target.checked;
-  else if(f === 'boost'){
+  const i = +card.dataset.i, m = state.team[i], f = e.target.dataset.f;
+  if(!f) return;
+  if(e.target.type === 'checkbox'){ m[f] = e.target.checked; render(); return; }
+  if(f === 'boost'){
     const old = m.boost;
     m.boost = clampBoost(e.target.value);
-    if(m.boostSim === old || m.boostSim < m.boost) m.boostSim = m.boost;
-    card.querySelector('[data-f="boostSim"]').value = m.boostSim;
+    if(m.boostSim === old || m.boostSim < m.boost){ m.boostSim = m.boost; card.querySelector('[data-f="boostSim"]').value = m.boostSim; }
   }
   else if(f === 'boostSim') m.boostSim = clampBoost(e.target.value);
-  else m[f] = f === 'dmg' ? Number(e.target.value) : e.target.value;
-  // Texto/número: não re-renderiza os cards para não perder o foco; checkbox sim.
-  if(e.target.type === 'checkbox') render(true);
-  else { updateMonOut(card, m); render(); }
+  else if(f === 'dmg') m.dmg = Number(e.target.value);
+  else m[f] = e.target.value;
+  refreshNumbers();
 });
-function updateMonOut(card, m){
-  card.querySelector('.mon-out').innerHTML = monOutHTML(m);
-}
-$('boostPlus5').addEventListener('click', () => { state.team.forEach(m => m.boostSim = clampBoost(m.boostSim + 5)); render(true); });
+duosEl.addEventListener('click', e => {
+  const btn = e.target.closest('[data-act="pick"]'); if(!btn) return;
+  const i = +btn.closest('.mon').dataset.i;
+  if(picked === null) picked = i;
+  else if(picked === i) picked = null;
+  else { swap(picked, i); picked = null; }
+  render();
+});
+$('tips').addEventListener('click', e => {
+  const b = e.target.closest('[data-swap]'); if(!b) return;
+  const [x, y] = b.dataset.swap.split('-').map(Number);
+  swap(x, y); picked = null; render();
+});
+
+// Arrastar (mouse): só a alça ⠿ liga o arraste, para não atrapalhar os inputs.
+duosEl.addEventListener('mousedown', e => {
+  const h = e.target.closest('.handle'); if(h) h.closest('.mon').draggable = true;
+});
+duosEl.addEventListener('dragstart', e => {
+  const card = e.target.closest('.mon'); if(!card) return;
+  e.dataTransfer.setData('text/plain', card.dataset.i);
+  e.dataTransfer.effectAllowed = 'move';
+  card.classList.add('dragging');
+});
+duosEl.addEventListener('dragover', e => {
+  const card = e.target.closest('.mon'); if(!card) return;
+  e.preventDefault();
+  document.querySelectorAll('.mon.drop-target').forEach(x => x !== card && x.classList.remove('drop-target'));
+  if(!card.classList.contains('dragging')) card.classList.add('drop-target');
+});
+duosEl.addEventListener('dragleave', e => {
+  const card = e.target.closest('.mon'); if(card && !card.contains(e.relatedTarget)) card.classList.remove('drop-target');
+});
+duosEl.addEventListener('drop', e => {
+  const card = e.target.closest('.mon'); if(!card) return;
+  e.preventDefault();
+  const from = Number(e.dataTransfer.getData('text/plain')), to = +card.dataset.i;
+  if(!Number.isNaN(from)) { swap(from, to); picked = null; render(); }
+});
+duosEl.addEventListener('dragend', () => {
+  document.querySelectorAll('.mon').forEach(x => { x.draggable = false; x.classList.remove('dragging', 'drop-target'); });
+});
+
+// Arrastar (toque): segura a alça ⠿ e solta em cima de outro pokémon.
+let touchFrom = null;
+duosEl.addEventListener('touchstart', e => {
+  const h = e.target.closest('.handle'); if(!h) return;
+  touchFrom = h.closest('.mon'); touchFrom.classList.add('dragging');
+}, {passive: true});
+duosEl.addEventListener('touchmove', e => {
+  if(!touchFrom) return;
+  e.preventDefault();
+  const t = e.touches[0], over = document.elementFromPoint(t.clientX, t.clientY)?.closest('.mon');
+  document.querySelectorAll('.mon.drop-target').forEach(x => x.classList.remove('drop-target'));
+  if(over && over !== touchFrom) over.classList.add('drop-target');
+}, {passive: false});
+duosEl.addEventListener('touchend', e => {
+  if(!touchFrom) return;
+  const t = e.changedTouches[0], over = document.elementFromPoint(t.clientX, t.clientY)?.closest('.mon');
+  const from = +touchFrom.dataset.i; touchFrom = null;
+  if(over && +over.dataset.i !== from){ swap(from, +over.dataset.i); picked = null; }
+  render();
+});
+
+$('autoBalance').addEventListener('click', () => { autoBalance(); picked = null; render(); });
+$('autoStrong').addEventListener('click', () => { autoStrong(); picked = null; render(); });
+$('boostPlus5').addEventListener('click', () => { state.team.forEach(m => m.boostSim = clampBoost(m.boostSim + 5)); render(); });
+$('berryAll').addEventListener('click', () => { state.team.forEach(m => m.useBerry = true); render(); });
 $('simReset').addEventListener('click', () => {
-  state.team.forEach(m => m.boostSim = m.boost);
+  state.team.forEach(m => { m.boostSim = m.boost; m.useBerry = m.measuredWithBerry; });
   state.levelSim = state.level; state.medalPct = 0;
-  renderSettings(); render(true);
+  renderSettings(); render();
 });
-$('berryAll').addEventListener('click', () => { state.team.forEach(m => m.useBerry = true); render(true); });
-$('berryReal').addEventListener('click', () => { state.team.forEach(m => m.useBerry = m.measuredWithBerry); render(true); });
 $('reset').addEventListener('click', () => {
   state = {...state, team: structuredClone(DEFAULT_TEAM), berryPct: DEFAULT_BERRY, level: DEFAULT_LEVEL, levelSim: DEFAULT_LEVEL, medalPct: 0};
-  renderSettings(); render(true);
+  picked = null; renderSettings(); render();
 });
 
 renderSettings();
-render(true);
+render();
 </script>
 </body>
 </html>
